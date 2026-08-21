@@ -2,39 +2,113 @@ const chat = document.getElementById("chat");
 const input = document.getElementById("messageInput");
 const history = document.getElementById("history");
 
-let conversations = [];
 
-
+// ========================================
 // SEND MESSAGE
+// ========================================
 
-function sendMessage() {
+async function sendMessage() {
 
     const text = input.value.trim();
 
     if (!text) return;
 
+    // Remove welcome screen
     removeWelcome();
 
+    // Display user's message
     addMessage(text, "user");
 
+    // Clear input
     input.value = "";
-
     input.style.height = "auto";
 
+    // Add message to sidebar history
     addHistory(text);
 
-    // Temporary AI response
-    setTimeout(() => {
+    // Show loading message
+    const loadingMessage = addMessage("Thinking...", "ai");
 
-        const response = generateResponse(text);
+    try {
 
-        addMessage(response, "ai");
+        // Send message to your Vercel backend
+        const response = await fetch(
+            "https://csllm.vercel.app/api/chat",
+            {
+                method: "POST",
 
-    }, 600);
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    message: text
+                })
+            }
+        );
+
+
+        // Check if the backend responded successfully
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            console.error(
+                "Backend error:",
+                response.status,
+                errorText
+            );
+
+            throw new Error(
+                `Server returned ${response.status}`
+            );
+        }
+
+
+        // Convert response to JSON
+        const data = await response.json();
+
+
+        // Remove "Thinking..."
+        loadingMessage.remove();
+
+
+        // Display AI response
+        if (data.reply) {
+
+            addMessage(data.reply, "ai");
+
+        } else {
+
+            addMessage(
+                "The AI didn't return a response.",
+                "ai"
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error("AI connection error:", error);
+
+
+        // Remove "Thinking..."
+        loadingMessage.remove();
+
+
+        // Show error message
+        addMessage(
+            "Sorry, I couldn't connect to the AI. Please check your Vercel backend.",
+            "ai"
+        );
+    }
 }
 
 
+// ========================================
 // ADD MESSAGE
+// ========================================
 
 function addMessage(text, type) {
 
@@ -42,43 +116,67 @@ function addMessage(text, type) {
 
     message.className = `message ${type}`;
 
+
     const content = document.createElement("div");
 
     content.className = "message-content";
 
+
     content.textContent = text;
+
 
     message.appendChild(content);
 
     chat.appendChild(message);
 
+
+    // Automatically scroll to newest message
     chat.scrollTop = chat.scrollHeight;
+
+
+    // Return the message so we can remove it later
+    return message;
 }
 
 
+// ========================================
 // REMOVE WELCOME SCREEN
+// ========================================
 
 function removeWelcome() {
 
     const welcome = document.getElementById("welcome");
 
     if (welcome) {
+
         welcome.remove();
+
     }
 }
 
 
-// SUGGESTION BUTTON
+// ========================================
+// SUGGESTION BUTTONS
+// ========================================
 
 function suggest(text) {
 
     input.value = text;
 
+    input.style.height = "auto";
+
+    input.style.height =
+        Math.min(input.scrollHeight, 150) + "px";
+
+    input.focus();
+
     sendMessage();
 }
 
 
+// ========================================
 // NEW CHAT
+// ========================================
 
 function newChat() {
 
@@ -107,10 +205,18 @@ function newChat() {
 
         </div>
     `;
+
+    input.value = "";
+
+    input.style.height = "auto";
+
+    input.focus();
 }
 
 
+// ========================================
 // CHAT HISTORY
+// ========================================
 
 function addHistory(text) {
 
@@ -120,27 +226,38 @@ function addHistory(text) {
 
     item.textContent = text;
 
-    history.prepend(item);
 
+    // Put newest conversation at the top
+    history.prepend(item);
 }
 
 
+// ========================================
 // MOBILE SIDEBAR
+// ========================================
 
 function toggleSidebar() {
 
-    const sidebar = document.querySelector(".sidebar");
+    const sidebar =
+        document.querySelector(".sidebar");
 
     sidebar.classList.toggle("open");
-
 }
 
 
+// ========================================
 // ENTER TO SEND
+// ========================================
 
 function handleKey(event) {
 
-    if (event.key === "Enter" && !event.shiftKey) {
+    // Enter sends the message
+    // Shift + Enter creates a new line
+
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey
+    ) {
 
         event.preventDefault();
 
@@ -150,46 +267,32 @@ function handleKey(event) {
 }
 
 
-// AUTO RESIZE TEXTAREA
+// ========================================
+// AUTO-RESIZE TEXTAREA
+// ========================================
 
 input.addEventListener("input", () => {
 
     input.style.height = "auto";
 
-    input.style.height = input.scrollHeight + "px";
+    input.style.height =
+        Math.min(input.scrollHeight, 150) + "px";
 
 });
 
 
-// TEMPORARY AI
+// ========================================
+// CLOSE MOBILE SIDEBAR
+// ========================================
 
-function generateResponse(message) {
+chat.addEventListener("click", () => {
 
-    const text = message.toLowerCase();
+    const sidebar =
+        document.querySelector(".sidebar");
 
-    if (text.includes("hello") || text.includes("hi")) {
+    if (window.innerWidth <= 700) {
 
-        return "Hello! I'm your AI assistant. What would you like to talk about?";
-
-    }
-
-    if (text.includes("how does ai work")) {
-
-        return "AI learns patterns from data using mathematical models called neural networks. During training, the model adjusts billions of parameters so it becomes better at predicting useful outputs.";
+        sidebar.classList.remove("open");
 
     }
-
-    if (text.includes("who are you")) {
-
-        return "I'm My AI, a small experimental chatbot. Right now I'm running with simple JavaScript responses. The next step is connecting me to a real language model.";
-
-    }
-
-    if (text.includes("project")) {
-
-        return "A cool project would be to build your own small language model and then create a website where people can talk to it.";
-
-    }
-
-    return "I received your message: \"" + message + "\"\n\nRight now I'm a basic prototype. The next version can connect this website to a real AI model.";
-}
+});
