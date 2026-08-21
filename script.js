@@ -1,24 +1,180 @@
 // ========================================
 // CSLLM FRONTEND
+// Multiple Chats + Saved Conversations
 // Works on Vercel AND GitHub Pages
 // ========================================
 
-const API_URL =
-    "https://csllm.vercel.app/api/chat";
+const API_URL = "https://csllm.vercel.app/api/chat";
 
 
 // ========================================
 // HTML ELEMENTS
 // ========================================
 
-const chat =
-    document.getElementById("chat");
+const chat = document.getElementById("chat");
+const input = document.getElementById("messageInput");
+const history = document.getElementById("history");
 
-const input =
-    document.getElementById("messageInput");
 
-const history =
-    document.getElementById("history");
+// ========================================
+// CHAT DATA
+// ========================================
+
+let conversations =
+    JSON.parse(localStorage.getItem("csllm_chats")) || [];
+
+let currentChatId =
+    localStorage.getItem("csllm_current_chat");
+
+
+// ========================================
+// CREATE CHAT ID
+// ========================================
+
+function createChatId() {
+
+    return Date.now().toString() +
+        Math.random()
+            .toString(36)
+            .substring(2);
+}
+
+
+// ========================================
+// CREATE NEW CHAT
+// ========================================
+
+function newChat() {
+
+    // If there is an empty current chat,
+    // don't create another empty one.
+
+    const currentChat =
+        conversations.find(
+            chat => chat.id === currentChatId
+        );
+
+    if (
+        currentChat &&
+        currentChat.messages.length === 0
+    ) {
+
+        loadChat(currentChat.id);
+        return;
+    }
+
+
+    // Create new conversation
+
+    const newConversation = {
+
+        id: createChatId(),
+
+        title: "New Chat",
+
+        messages: [],
+
+        createdAt: Date.now()
+
+    };
+
+
+    conversations.unshift(
+        newConversation
+    );
+
+
+    currentChatId =
+        newConversation.id;
+
+
+    saveChats();
+
+    renderHistory();
+
+    displayWelcome();
+
+    input.value = "";
+
+    input.style.height = "auto";
+
+    input.focus();
+}
+
+
+// ========================================
+// SAVE CHATS
+// ========================================
+
+function saveChats() {
+
+    localStorage.setItem(
+        "csllm_chats",
+        JSON.stringify(conversations)
+    );
+
+
+    localStorage.setItem(
+        "csllm_current_chat",
+        currentChatId || ""
+    );
+}
+
+
+// ========================================
+// GET CURRENT CHAT
+// ========================================
+
+function getCurrentChat() {
+
+    return conversations.find(
+        chat => chat.id === currentChatId
+    );
+}
+
+
+// ========================================
+// MAKE SURE CHAT EXISTS
+// ========================================
+
+function ensureChatExists() {
+
+    let currentChat =
+        getCurrentChat();
+
+
+    if (!currentChat) {
+
+        const newConversation = {
+
+            id: createChatId(),
+
+            title: "New Chat",
+
+            messages: [],
+
+            createdAt: Date.now()
+
+        };
+
+
+        conversations.unshift(
+            newConversation
+        );
+
+
+        currentChatId =
+            newConversation.id;
+
+
+        saveChats();
+
+        renderHistory();
+    }
+
+
+    return getCurrentChat();
+}
 
 
 // ========================================
@@ -36,27 +192,61 @@ async function sendMessage() {
     }
 
 
+    // Make sure there is a chat
+
+    const currentChat =
+        ensureChatExists();
+
+
+    // Remove welcome screen
+
     removeWelcome();
 
 
-    // Add user message
+    // Add user message to screen
+
     addMessage(
         text,
         "user"
     );
 
 
-    // Add to history
-    addHistory(text);
+    // Save user message
+
+    currentChat.messages.push({
+
+        role: "user",
+
+        content: text
+
+    });
+
+
+    // Use first message as chat title
+
+    if (
+        currentChat.title === "New Chat"
+    ) {
+
+        currentChat.title =
+            createChatTitle(text);
+    }
+
+
+    saveChats();
+
+    renderHistory();
 
 
     // Clear input
+
     input.value = "";
 
     input.style.height = "auto";
 
 
-    // Loading message
+    // Show loading
+
     const loading =
         addMessage(
             "Thinking...",
@@ -66,20 +256,28 @@ async function sendMessage() {
 
     try {
 
+        // Send to Vercel
+
         const response =
             await fetch(
                 API_URL,
                 {
+
                     method: "POST",
 
                     headers: {
+
                         "Content-Type":
                             "application/json"
+
                     },
 
                     body: JSON.stringify({
+
                         message: text
+
                     })
+
                 }
             );
 
@@ -100,6 +298,7 @@ async function sendMessage() {
                 "Backend error:",
                 responseText
             );
+
 
             throw new Error(
                 `Server returned ${response.status}`
@@ -126,8 +325,11 @@ async function sendMessage() {
 
 
         // Remove loading
+
         loading.remove();
 
+
+        // Backend error
 
         if (data.error) {
 
@@ -141,12 +343,28 @@ async function sendMessage() {
         }
 
 
+        // AI response
+
         if (data.reply) {
 
             addMessage(
                 data.reply,
                 "ai"
             );
+
+
+            // Save AI response
+
+            currentChat.messages.push({
+
+                role: "assistant",
+
+                content: data.reply
+
+            });
+
+
+            saveChats();
 
         } else {
 
@@ -179,7 +397,42 @@ async function sendMessage() {
 
 
 // ========================================
-// ADD MESSAGE
+// CREATE CHAT TITLE
+// ========================================
+
+function createChatTitle(text) {
+
+    let title =
+        text.trim();
+
+
+    // Remove excessive whitespace
+
+    title =
+        title.replace(
+            /\s+/g,
+            " "
+        );
+
+
+    // Limit title length
+
+    if (title.length > 32) {
+
+        title =
+            title.substring(
+                0,
+                32
+            ) + "...";
+    }
+
+
+    return title;
+}
+
+
+// ========================================
+// DISPLAY MESSAGE
 // ========================================
 
 function addMessage(
@@ -217,6 +470,8 @@ function addMessage(
     );
 
 
+    // Scroll to bottom
+
     chat.scrollTop =
         chat.scrollHeight;
 
@@ -226,56 +481,10 @@ function addMessage(
 
 
 // ========================================
-// REMOVE WELCOME
+// DISPLAY WELCOME SCREEN
 // ========================================
 
-function removeWelcome() {
-
-    const welcome =
-        document.getElementById(
-            "welcome"
-        );
-
-
-    if (welcome) {
-        welcome.remove();
-    }
-}
-
-
-// ========================================
-// SUGGESTIONS
-// ========================================
-
-function suggest(text) {
-
-    input.value =
-        text;
-
-
-    input.style.height =
-        "auto";
-
-
-    input.style.height =
-        Math.min(
-            input.scrollHeight,
-            150
-        ) + "px";
-
-
-    input.focus();
-
-
-    sendMessage();
-}
-
-
-// ========================================
-// NEW CHAT
-// ========================================
-
-function newChat() {
+function displayWelcome() {
 
     chat.innerHTML = `
 
@@ -325,62 +534,305 @@ function newChat() {
         </div>
 
     `;
+}
 
 
-    input.value = "";
+// ========================================
+// REMOVE WELCOME
+// ========================================
 
-    input.style.height =
-        "auto";
+function removeWelcome() {
+
+    const welcome =
+        document.getElementById(
+            "welcome"
+        );
+
+
+    if (welcome) {
+
+        welcome.remove();
+
+    }
+}
+
+
+// ========================================
+// LOAD CHAT
+// ========================================
+
+function loadChat(id) {
+
+    const selectedChat =
+        conversations.find(
+            chat => chat.id === id
+        );
+
+
+    if (!selectedChat) {
+        return;
+    }
+
+
+    currentChatId =
+        selectedChat.id;
+
+
+    saveChats();
+
+
+    // Clear current screen
+
+    chat.innerHTML = "";
+
+
+    // Display saved messages
+
+    selectedChat.messages.forEach(
+        message => {
+
+            addMessage(
+                message.content,
+                message.role === "user"
+                    ? "user"
+                    : "ai"
+            );
+
+        }
+    );
+
+
+    // If empty chat
+
+    if (
+        selectedChat.messages.length === 0
+    ) {
+
+        displayWelcome();
+
+    }
+
+
+    renderHistory();
 
     input.focus();
 }
 
 
 // ========================================
-// HISTORY
+// DELETE CHAT
 // ========================================
 
-function addHistory(text) {
+function deleteChat(
+    id,
+    event
+) {
+
+    // Stop clicking delete
+    // from opening the chat
+
+    if (event) {
+        event.stopPropagation();
+    }
+
+
+    conversations =
+        conversations.filter(
+            chat => chat.id !== id
+        );
+
+
+    // If deleting current chat
+
+    if (
+        currentChatId === id
+    ) {
+
+        currentChatId =
+            null;
+
+
+        // Create a new empty chat
+
+        const newConversation = {
+
+            id: createChatId(),
+
+            title: "New Chat",
+
+            messages: [],
+
+            createdAt: Date.now()
+
+        };
+
+
+        conversations.unshift(
+            newConversation
+        );
+
+
+        currentChatId =
+            newConversation.id;
+
+
+        displayWelcome();
+    }
+
+
+    saveChats();
+
+    renderHistory();
+}
+
+
+// ========================================
+// RENDER CHAT HISTORY
+// ========================================
+
+function renderHistory() {
 
     if (!history) {
         return;
     }
 
 
-    const item =
-        document.createElement("div");
+    history.innerHTML = "";
 
 
-    item.className =
-        "history-item";
+    conversations.forEach(
+        conversation => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
 
 
-    let displayText =
-        text;
+            item.className =
+                "history-item";
 
 
-    if (displayText.length > 40) {
+            if (
+                conversation.id ===
+                currentChatId
+            ) {
 
-        displayText =
-            displayText.substring(
-                0,
-                40
-            ) + "...";
-    }
+                item.classList.add(
+                    "active"
+                );
 
-
-    item.textContent =
-        displayText;
+            }
 
 
-    history.prepend(
-        item
+            // Chat title
+
+            const title =
+                document.createElement(
+                    "span"
+                );
+
+
+            title.className =
+                "history-title";
+
+
+            title.textContent =
+                conversation.title;
+
+
+            // Delete button
+
+            const deleteButton =
+                document.createElement(
+                    "button"
+                );
+
+
+            deleteButton.className =
+                "delete-chat";
+
+
+            deleteButton.textContent =
+                "×";
+
+
+            deleteButton.title =
+                "Delete chat";
+
+
+            deleteButton.onclick =
+                function(event) {
+
+                    deleteChat(
+                        conversation.id,
+                        event
+                    );
+
+                };
+
+
+            // Open chat
+
+            item.onclick =
+                function() {
+
+                    loadChat(
+                        conversation.id
+                    );
+
+                };
+
+
+            item.appendChild(
+                title
+            );
+
+
+            item.appendChild(
+                deleteButton
+            );
+
+
+            history.appendChild(
+                item
+            );
+
+        }
     );
 }
 
 
 // ========================================
-// KEYBOARD
+// SUGGESTION BUTTON
+// ========================================
+
+function suggest(text) {
+
+    input.value =
+        text;
+
+
+    input.style.height =
+        "auto";
+
+
+    input.style.height =
+        Math.min(
+            input.scrollHeight,
+            150
+        ) + "px";
+
+
+    input.focus();
+
+
+    sendMessage();
+}
+
+
+// ========================================
+// KEYBOARD INPUT
 // ========================================
 
 function handleKey(event) {
@@ -398,14 +850,14 @@ function handleKey(event) {
 
 
 // ========================================
-// AUTO RESIZE TEXTAREA
+// AUTO RESIZE INPUT
 // ========================================
 
 if (input) {
 
     input.addEventListener(
         "input",
-        () => {
+        function() {
 
             input.style.height =
                 "auto";
@@ -416,13 +868,14 @@ if (input) {
                     input.scrollHeight,
                     150
                 ) + "px";
+
         }
     );
 }
 
 
 // ========================================
-// SIDEBAR
+// MOBILE SIDEBAR
 // ========================================
 
 function toggleSidebar() {
@@ -445,14 +898,86 @@ function toggleSidebar() {
 
 
 // ========================================
-// STARTUP
+// INITIALIZE
 // ========================================
 
-console.log(
-    "CSLLM loaded."
-);
+function initialize() {
 
-console.log(
-    "AI backend:",
-    API_URL
-);
+    // If there are no chats,
+    // create the first one.
+
+    if (
+        conversations.length === 0
+    ) {
+
+        const firstChat = {
+
+            id: createChatId(),
+
+            title: "New Chat",
+
+            messages: [],
+
+            createdAt: Date.now()
+
+        };
+
+
+        conversations.push(
+            firstChat
+        );
+
+
+        currentChatId =
+            firstChat.id;
+
+
+        saveChats();
+
+    }
+
+
+    // Make sure current chat
+    // actually exists
+
+    const currentExists =
+        conversations.some(
+            chat =>
+                chat.id ===
+                currentChatId
+        );
+
+
+    if (!currentExists) {
+
+        currentChatId =
+            conversations[0].id;
+
+        saveChats();
+
+    }
+
+
+    // Load current chat
+
+    loadChat(
+        currentChatId
+    );
+
+
+    renderHistory();
+
+    console.log(
+        "CSLLM loaded successfully."
+    );
+
+    console.log(
+        "Backend:",
+        API_URL
+    );
+}
+
+
+// Start app
+
+initialize();
