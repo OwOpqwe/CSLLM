@@ -1,231 +1,364 @@
 // ========================================
-// CSLLM - GROQ BACKEND
-// Supports Vercel + GitHub Pages
+// CSLLM CHAT.JS
+// Chat UI + Sidebar + New Chat
 // ========================================
 
-export default async function handler(req, res) {
 
-    // ------------------------------------
-    // CORS
-    // ------------------------------------
+// ========================================
+// GET ELEMENTS
+// ========================================
 
-    const allowedOrigins = [
-        "https://csllm.vercel.app",
-        "https://owopqwe.github.io"
-    ];
+const chatContainer =
+    document.getElementById("chat");
 
-    const origin = req.headers.origin;
+const messageInput =
+    document.getElementById("messageInput");
 
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
+const historyContainer =
+    document.getElementById("history");
+
+
+// ========================================
+// SIDEBAR
+// ========================================
+
+function toggleSidebar() {
+
+    const sidebar =
+        document.querySelector(".sidebar");
+
+    if (!sidebar) {
+        return;
     }
 
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "POST, OPTIONS"
+    sidebar.classList.toggle("open");
+}
+
+
+// ========================================
+// NEW CHAT BUTTON
+// ========================================
+
+function createNewChat() {
+
+    if (typeof newChat === "function") {
+
+        newChat();
+
+        // Close mobile sidebar
+
+        const sidebar =
+            document.querySelector(".sidebar");
+
+        if (sidebar) {
+            sidebar.classList.remove("open");
+        }
+
+        return;
+    }
+
+    console.error(
+        "newChat() was not found."
     );
-
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type"
-    );
+}
 
 
-    // ------------------------------------
-    // Handle browser CORS check
-    // ------------------------------------
+// ========================================
+// SEND BUTTON
+// ========================================
 
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
+function handleSend() {
 
+    if (
+        typeof sendMessage === "function"
+    ) {
 
-    // ------------------------------------
-    // Only allow POST
-    // ------------------------------------
+        sendMessage();
 
-    if (req.method !== "POST") {
-        return res.status(405).json({
-            error: "Method not allowed"
-        });
-    }
-
-
-    try {
-
-        // --------------------------------
-        // Get message
-        // --------------------------------
-
-        const { message } = req.body || {};
-
-        if (
-            !message ||
-            typeof message !== "string"
-        ) {
-            return res.status(400).json({
-                error: "Please provide a message."
-            });
-        }
-
-
-        // --------------------------------
-        // Get Groq API key
-        // --------------------------------
-
-        const apiKey =
-            process.env.GROQ_API_KEY;
-
-
-        if (!apiKey) {
-
-            console.error(
-                "GROQ_API_KEY is missing."
-            );
-
-            return res.status(500).json({
-                error:
-                    "GROQ_API_KEY is not configured."
-            });
-        }
-
-
-        // --------------------------------
-        // Send request to Groq
-        // --------------------------------
-
-        const groqResponse = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json",
-
-                    "Authorization":
-                        `Bearer ${apiKey}`
-                },
-
-                body: JSON.stringify({
-
-                    model:
-                        "openai/gpt-oss-20b",
-
-                    messages: [
-
-                        {
-                            role: "system",
-
-                            content:
-                                `You are CSLLM,
-a helpful, friendly and intelligent
-AI assistant.
-
-Answer questions clearly and accurately.
-
-Explain difficult topics in simple language.
-
-If the user asks for steps,
-give them in an organized way.
-
-Be friendly and helpful.`
-                        },
-
-                        {
-                            role: "user",
-                            content: message
-                        }
-
-                    ],
-
-                    temperature: 0.7,
-
-                    max_completion_tokens: 2000,
-
-                    stream: false,
-
-                    include_reasoning: false
-                })
-            }
-        );
-
-
-        // --------------------------------
-        // Read Groq response
-        // --------------------------------
-
-        const data =
-            await groqResponse.json();
-
-
-        // --------------------------------
-        // Handle Groq error
-        // --------------------------------
-
-        if (!groqResponse.ok) {
-
-            console.error(
-                "Groq error:",
-                data
-            );
-
-            return res.status(
-                groqResponse.status
-            ).json({
-
-                error:
-                    data?.error?.message ||
-                    "Groq API request failed.",
-
-                type:
-                    data?.error?.type ||
-                    "unknown",
-
-                code:
-                    data?.error?.code ||
-                    "unknown"
-            });
-        }
-
-
-        // --------------------------------
-        // Get AI response
-        // --------------------------------
-
-        const reply =
-            data?.choices?.[0]?.message?.content;
-
-
-        if (!reply) {
-
-            return res.status(500).json({
-                error:
-                    "The AI returned an empty response."
-            });
-        }
-
-
-        // --------------------------------
-        // Send response to website
-        // --------------------------------
-
-        return res.status(200).json({
-            reply: reply
-        });
-
-
-    } catch (error) {
+    } else {
 
         console.error(
-            "CSLLM server error:",
-            error
+            "sendMessage() was not found."
         );
 
-        return res.status(500).json({
-            error:
-                error?.message ||
-                "Internal server error."
-        });
     }
 }
+
+
+// ========================================
+// ENTER KEY
+// ========================================
+
+function handleChatKey(event) {
+
+    // Enter sends message
+
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey
+    ) {
+
+        event.preventDefault();
+
+        handleSend();
+
+    }
+
+}
+
+
+// ========================================
+// INPUT AUTO RESIZE
+// ========================================
+
+function resizeInput() {
+
+    if (!messageInput) {
+        return;
+    }
+
+
+    messageInput.style.height =
+        "auto";
+
+
+    const newHeight =
+        Math.min(
+            messageInput.scrollHeight,
+            150
+        );
+
+
+    messageInput.style.height =
+        newHeight + "px";
+
+}
+
+
+// ========================================
+// INPUT EVENTS
+// ========================================
+
+if (messageInput) {
+
+    messageInput.addEventListener(
+        "input",
+        resizeInput
+    );
+
+
+    messageInput.addEventListener(
+        "keydown",
+        handleChatKey
+    );
+
+}
+
+
+// ========================================
+// SUGGESTION BUTTONS
+// ========================================
+
+function useSuggestion(text) {
+
+    if (!messageInput) {
+        return;
+    }
+
+
+    messageInput.value =
+        text;
+
+
+    resizeInput();
+
+    messageInput.focus();
+
+
+    handleSend();
+
+}
+
+
+// ========================================
+// CLOSE SIDEBAR AFTER CHAT SELECTION
+// ========================================
+
+if (historyContainer) {
+
+    historyContainer.addEventListener(
+        "click",
+        function(event) {
+
+            const sidebar =
+                document.querySelector(
+                    ".sidebar"
+                );
+
+
+            // Only close on mobile
+
+            if (
+                window.innerWidth <= 768 &&
+                sidebar
+            ) {
+
+                sidebar.classList.remove(
+                    "open"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ========================================
+// CLOSE SIDEBAR WHEN CLICKING OUTSIDE
+// ========================================
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+        const sidebar =
+            document.querySelector(
+                ".sidebar"
+            );
+
+
+        const menuButton =
+            document.querySelector(
+                ".menu-button"
+            );
+
+
+        if (
+            !sidebar ||
+            !sidebar.classList.contains(
+                "open"
+            )
+        ) {
+            return;
+        }
+
+
+        // Don't close if clicking
+        // inside sidebar
+
+        if (
+            sidebar.contains(event.target)
+        ) {
+            return;
+        }
+
+
+        // Don't close if clicking
+        // menu button
+
+        if (
+            menuButton &&
+            menuButton.contains(
+                event.target
+            )
+        ) {
+            return;
+        }
+
+
+        sidebar.classList.remove(
+            "open"
+        );
+
+    }
+);
+
+
+// ========================================
+// MOBILE MENU
+// ========================================
+
+function openChatMenu() {
+
+    const sidebar =
+        document.querySelector(
+            ".sidebar"
+        );
+
+
+    if (!sidebar) {
+        return;
+    }
+
+
+    sidebar.classList.toggle(
+        "open"
+    );
+
+}
+
+
+// ========================================
+// CLEAR INPUT
+// ========================================
+
+function clearInput() {
+
+    if (!messageInput) {
+        return;
+    }
+
+
+    messageInput.value =
+        "";
+
+
+    messageInput.style.height =
+        "auto";
+
+
+    messageInput.focus();
+
+}
+
+
+// ========================================
+// FOCUS CHAT
+// ========================================
+
+function focusChat() {
+
+    if (messageInput) {
+
+        messageInput.focus();
+
+    }
+
+}
+
+
+// ========================================
+// INITIALIZE CHAT UI
+// ========================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        console.log(
+            "CSLLM chat.js loaded."
+        );
+
+
+        // Focus input
+
+        if (messageInput) {
+
+            messageInput.focus();
+
+        }
+
+    }
+);
