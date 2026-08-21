@@ -21,18 +21,16 @@ export default async function handler(req, res) {
 
 
     // ========================================
-    // HANDLE PREFLIGHT
+    // PREFLIGHT
     // ========================================
 
     if (req.method === "OPTIONS") {
-
         return res.status(200).end();
-
     }
 
 
     // ========================================
-    // ONLY ALLOW POST
+    // POST ONLY
     // ========================================
 
     if (req.method !== "POST") {
@@ -46,69 +44,146 @@ export default async function handler(req, res) {
 
     try {
 
-        const {
-            message
-        } = req.body;
+        // ========================================
+        // CHECK API KEY
+        // ========================================
 
+        if (!process.env.GROQ_API_KEY) {
 
-        if (!message) {
-
-            return res.status(400).json({
-                error: "Message is required"
+            return res.status(500).json({
+                error:
+                    "GROQ_API_KEY is missing from Vercel."
             });
 
         }
 
 
         // ========================================
-        // GROQ API
+        // GET MESSAGE
         // ========================================
 
-        const response = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
+        const message =
+            req.body?.message;
 
-                method: "POST",
 
-                headers: {
+        if (
+            !message ||
+            typeof message !== "string"
+        ) {
 
-                    "Content-Type":
-                        "application/json",
+            return res.status(400).json({
+                error:
+                    "Message is required."
+            });
 
-                    "Authorization":
-                        `Bearer ${process.env.GROQ_API_KEY}`
+        }
 
-                },
 
-                body: JSON.stringify({
+        // ========================================
+        // ABORT AFTER 25 SECONDS
+        // ========================================
 
-                    model:
-                        "llama-3.1-8b-instant",
+        const controller =
+            new AbortController();
 
-                    messages: [
 
-                        {
-                            role: "system",
+        const timeout =
+            setTimeout(
+                () => controller.abort(),
+                25000
+            );
 
-                            content:
-                                "You are CSLLM, a helpful AI assistant. Give clear, useful and friendly answers."
+
+        // ========================================
+        // CALL GROQ
+        // ========================================
+
+        let groqResponse;
+
+
+        try {
+
+            groqResponse =
+                await fetch(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json",
+
+                            "Authorization":
+                                `Bearer ${process.env.GROQ_API_KEY}`
+
                         },
 
-                        {
-                            role: "user",
+                        signal:
+                            controller.signal,
 
-                            content: message
-                        }
+                        body:
+                            JSON.stringify({
 
-                    ],
+                                model:
+                                    "llama-3.3-70b-versatile",
 
-                    temperature: 0.7,
+                                messages: [
 
-                    max_tokens: 1024
+                                    {
+                                        role:
+                                            "system",
 
-                })
+                                        content:
+                                            "You are CSLLM, a helpful and friendly AI assistant. Give clear, useful answers."
+                                    },
 
-            }
+                                    {
+                                        role:
+                                            "user",
+
+                                        content:
+                                            message
+                                    }
+
+                                ],
+
+                                temperature:
+                                    0.7,
+
+                                max_tokens:
+                                    512
+
+                            })
+
+                    }
+                );
+
+        } finally {
+
+            clearTimeout(timeout);
+
+        }
+
+
+        // ========================================
+        // READ GROQ RESPONSE
+        // ========================================
+
+        const responseText =
+            await groqResponse.text();
+
+
+        console.log(
+            "Groq status:",
+            groqResponse.status
+        );
+
+
+        console.log(
+            "Groq response:",
+            responseText
         );
 
 
@@ -116,23 +191,40 @@ export default async function handler(req, res) {
         // GROQ ERROR
         // ========================================
 
-        if (!response.ok) {
+        if (!groqResponse.ok) {
 
-            const errorText =
-                await response.text();
+            let errorData = null;
 
-            console.error(
-                "Groq error:",
-                errorText
-            );
+
+            try {
+
+                errorData =
+                    JSON.parse(
+                        responseText
+                    );
+
+            } catch {
+
+                // Response wasn't JSON
+
+            }
 
 
             return res.status(
-                response.status
+                groqResponse.status
             ).json({
 
                 error:
-                    "The AI service returned an error."
+                    errorData?.error?.message ||
+                    "Groq API returned an error.",
+
+                type:
+                    errorData?.error?.type ||
+                    null,
+
+                code:
+                    errorData?.error?.code ||
+                    null
 
             });
 
@@ -140,12 +232,34 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // READ RESPONSE
+        // PARSE SUCCESS
         // ========================================
 
-        const data =
-            await response.json();
+        let data;
 
+
+        try {
+
+            data =
+                JSON.parse(
+                    responseText
+                );
+
+        } catch {
+
+            return res.status(500).json({
+
+                error:
+                    "Groq returned invalid JSON."
+
+            });
+
+        }
+
+
+        // ========================================
+        // GET AI MESSAGE
+        // ========================================
 
         const reply =
             data?.choices?.[0]?.message?.content;
@@ -156,7 +270,7 @@ export default async function handler(req, res) {
             return res.status(500).json({
 
                 error:
-                    "The AI returned no response."
+                    "The AI returned an empty response."
 
             });
 
@@ -164,7 +278,7 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // SEND TO FRONTEND
+        // SUCCESS
         // ========================================
 
         return res.status(200).json({
@@ -177,14 +291,38 @@ export default async function handler(req, res) {
     } catch (error) {
 
         console.error(
-            "Server error:",
+            "Backend error:",
             error
         );
 
 
+        // ========================================
+        // TIMEOUT
+        // ========================================
+
+        if (
+            error.name ===
+            "AbortError"
+        ) {
+
+            return res.status(504).json({
+
+                error:
+                    "Groq took too long to respond. Please try again."
+
+            });
+
+        }
+
+
+        // ========================================
+        // OTHER ERROR
+        // ========================================
+
         return res.status(500).json({
 
             error:
+                error.message ||
                 "Internal server error."
 
         });
