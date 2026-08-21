@@ -1,3 +1,15 @@
+// ========================================
+// CSLLM - FRONTEND JAVASCRIPT
+// ========================================
+
+// Your Vercel backend
+const API_URL = "https://csllm.vercel.app/api/chat";
+
+
+// ========================================
+// GET HTML ELEMENTS
+// ========================================
+
 const chat = document.getElementById("chat");
 const input = document.getElementById("messageInput");
 const history = document.getElementById("history");
@@ -11,7 +23,10 @@ async function sendMessage() {
 
     const text = input.value.trim();
 
-    if (!text) return;
+    // Don't send empty messages
+    if (!text) {
+        return;
+    }
 
     // Remove welcome screen
     removeWelcome();
@@ -19,21 +34,28 @@ async function sendMessage() {
     // Display user's message
     addMessage(text, "user");
 
-    // Clear input
-    input.value = "";
-    input.style.height = "auto";
-
-    // Add message to sidebar history
+    // Add conversation to history
     addHistory(text);
 
+    // Clear input
+    input.value = "";
+
+    // Reset textarea height
+    input.style.height = "auto";
+
+
     // Show loading message
-    const loadingMessage = addMessage("Thinking...", "ai");
+    const loadingMessage = addMessage(
+        "Thinking...",
+        "ai"
+    );
+
 
     try {
 
-        // Send message to your Vercel backend
+        // Send message to Vercel
         const response = await fetch(
-            "https://csllm.vercel.app/api/chat",
+            API_URL,
             {
                 method: "POST",
 
@@ -48,15 +70,18 @@ async function sendMessage() {
         );
 
 
-        // Check if the backend responded successfully
-        if (!response.ok) {
+        // Get response text first
+        // This lets us see errors from the backend
+        const responseText = await response.text();
 
-            const errorText = await response.text();
+
+        // Check HTTP status
+        if (!response.ok) {
 
             console.error(
                 "Backend error:",
                 response.status,
-                errorText
+                responseText
             );
 
             throw new Error(
@@ -66,40 +91,75 @@ async function sendMessage() {
 
 
         // Convert response to JSON
-        const data = await response.json();
+        let data;
+
+        try {
+
+            data = JSON.parse(responseText);
+
+        } catch (error) {
+
+            console.error(
+                "Invalid JSON received:",
+                responseText
+            );
+
+            throw new Error(
+                "The server returned invalid data."
+            );
+        }
 
 
         // Remove "Thinking..."
         loadingMessage.remove();
 
 
-        // Display AI response
+        // Check for an error returned by backend
+        if (data.error) {
+
+            addMessage(
+                "AI Error: " + data.error,
+                "ai"
+            );
+
+            return;
+        }
+
+
+        // Check for AI response
         if (data.reply) {
 
-            addMessage(data.reply, "ai");
+            addMessage(
+                data.reply,
+                "ai"
+            );
 
         } else {
 
             addMessage(
-                "The AI didn't return a response.",
+                "The AI returned an empty response.",
                 "ai"
             );
-
         }
 
 
     } catch (error) {
 
-        console.error("AI connection error:", error);
+        console.error(
+            "AI connection error:",
+            error
+        );
 
 
-        // Remove "Thinking..."
-        loadingMessage.remove();
+        // Remove loading message
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
 
 
-        // Show error message
+        // Display error
         addMessage(
-            "Sorry, I couldn't connect to the AI. Please check your Vercel backend.",
+            "Sorry, I couldn't connect to CSLLM. Check the browser console for the error.",
             "ai"
         );
     }
@@ -122,6 +182,8 @@ function addMessage(text, type) {
     content.className = "message-content";
 
 
+    // textContent prevents AI responses
+    // from being treated as HTML
     content.textContent = text;
 
 
@@ -130,11 +192,11 @@ function addMessage(text, type) {
     chat.appendChild(message);
 
 
-    // Automatically scroll to newest message
+    // Scroll to newest message
     chat.scrollTop = chat.scrollHeight;
 
 
-    // Return the message so we can remove it later
+    // Return message
     return message;
 }
 
@@ -145,7 +207,8 @@ function addMessage(text, type) {
 
 function removeWelcome() {
 
-    const welcome = document.getElementById("welcome");
+    const welcome =
+        document.getElementById("welcome");
 
     if (welcome) {
 
@@ -156,20 +219,28 @@ function removeWelcome() {
 
 
 // ========================================
-// SUGGESTION BUTTONS
+// SUGGESTION BUTTON
 // ========================================
 
 function suggest(text) {
 
     input.value = text;
 
+
+    // Resize textarea
     input.style.height = "auto";
 
     input.style.height =
-        Math.min(input.scrollHeight, 150) + "px";
+        Math.min(
+            input.scrollHeight,
+            150
+        ) + "px";
+
 
     input.focus();
 
+
+    // Send suggestion
     sendMessage();
 }
 
@@ -189,15 +260,18 @@ function newChat() {
 
             <div class="suggestions">
 
-                <button onclick="suggest('Explain how AI works')">
+                <button
+                    onclick="suggest('Explain how AI works')">
                     Explain how AI works
                 </button>
 
-                <button onclick="suggest('Help me with my homework')">
+                <button
+                    onclick="suggest('Help me with my homework')">
                     Help me with my homework
                 </button>
 
-                <button onclick="suggest('Give me a fun project idea')">
+                <button
+                    onclick="suggest('Give me a fun project idea')">
                     Give me a project idea
                 </button>
 
@@ -205,6 +279,7 @@ function newChat() {
 
         </div>
     `;
+
 
     input.value = "";
 
@@ -220,14 +295,35 @@ function newChat() {
 
 function addHistory(text) {
 
-    const item = document.createElement("div");
-
-    item.className = "history-item";
-
-    item.textContent = text;
+    if (!history) {
+        return;
+    }
 
 
-    // Put newest conversation at the top
+    const item =
+        document.createElement("div");
+
+
+    item.className =
+        "history-item";
+
+
+    // Don't put extremely long messages
+    // into the sidebar
+    let displayText = text;
+
+    if (displayText.length > 40) {
+
+        displayText =
+            displayText.substring(0, 40)
+            + "...";
+    }
+
+
+    item.textContent = displayText;
+
+
+    // Newest conversation at top
     history.prepend(item);
 }
 
@@ -241,18 +337,24 @@ function toggleSidebar() {
     const sidebar =
         document.querySelector(".sidebar");
 
+
+    if (!sidebar) {
+        return;
+    }
+
+
     sidebar.classList.toggle("open");
 }
 
 
 // ========================================
-// ENTER TO SEND
+// KEYBOARD INPUT
 // ========================================
 
 function handleKey(event) {
 
-    // Enter sends the message
-    // Shift + Enter creates a new line
+    // Enter = send
+    // Shift + Enter = new line
 
     if (
         event.key === "Enter" &&
@@ -262,37 +364,71 @@ function handleKey(event) {
         event.preventDefault();
 
         sendMessage();
-
     }
 }
 
 
 // ========================================
-// AUTO-RESIZE TEXTAREA
+// TEXTAREA AUTO RESIZE
 // ========================================
 
-input.addEventListener("input", () => {
+if (input) {
 
-    input.style.height = "auto";
+    input.addEventListener(
+        "input",
+        () => {
 
-    input.style.height =
-        Math.min(input.scrollHeight, 150) + "px";
+            input.style.height = "auto";
 
-});
+            input.style.height =
+                Math.min(
+                    input.scrollHeight,
+                    150
+                ) + "px";
+        }
+    );
+}
 
 
 // ========================================
-// CLOSE MOBILE SIDEBAR
+// CLOSE SIDEBAR ON MOBILE
 // ========================================
 
-chat.addEventListener("click", () => {
+if (chat) {
 
-    const sidebar =
-        document.querySelector(".sidebar");
+    chat.addEventListener(
+        "click",
+        () => {
 
-    if (window.innerWidth <= 700) {
+            const sidebar =
+                document.querySelector(
+                    ".sidebar"
+                );
 
-        sidebar.classList.remove("open");
 
-    }
-});
+            if (
+                sidebar &&
+                window.innerWidth <= 700
+            ) {
+
+                sidebar.classList.remove(
+                    "open"
+                );
+            }
+        }
+    );
+}
+
+
+// ========================================
+// STARTUP
+// ========================================
+
+console.log(
+    "CSLLM frontend loaded."
+);
+
+console.log(
+    "Backend:",
+    API_URL
+);
