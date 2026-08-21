@@ -9,26 +9,20 @@ export default async function handler(req, res) {
 
     try {
 
-        // Get the user's message
         const { message } = req.body;
 
-        // Make sure there is a message
         if (!message || typeof message !== "string") {
             return res.status(400).json({
                 error: "No message provided"
             });
         }
 
-        // Make sure the API key exists
         if (!process.env.OPENAI_API_KEY) {
-            console.error("OPENAI_API_KEY is missing");
-
             return res.status(500).json({
-                error: "OpenAI API key is not configured"
+                error: "OPENAI_API_KEY is missing from Vercel."
             });
         }
 
-        // Send the message to OpenAI
         const response = await fetch(
             "https://api.openai.com/v1/responses",
             {
@@ -41,33 +35,28 @@ export default async function handler(req, res) {
                 },
 
                 body: JSON.stringify({
-                    model: "gpt-5.6",
-                    instructions:
-                        "You are My AI, a helpful and friendly AI assistant. Give clear, useful answers.",
+                    model: "gpt-5.6-luna",
                     input: message
                 })
             }
         );
 
-        // Get OpenAI response
         const data = await response.json();
 
-        // Handle OpenAI errors
+        console.log("OpenAI status:", response.status);
+        console.log("OpenAI response:", data);
+
         if (!response.ok) {
 
-            console.error("OpenAI error:", data);
-
             return res.status(response.status).json({
-                error: "The AI service returned an error."
+                error: data.error?.message || "OpenAI request failed.",
+                type: data.error?.type || null,
+                code: data.error?.code || null
             });
         }
 
-        // Get the generated text
-        const reply = data.output_text;
-
-        // Send it back to the website
         return res.status(200).json({
-            reply: reply || "The AI didn't return a response."
+            reply: data.output_text
         });
 
     } catch (error) {
@@ -75,7 +64,7 @@ export default async function handler(req, res) {
         console.error("Server error:", error);
 
         return res.status(500).json({
-            error: "Something went wrong on the server."
+            error: error.message || "Server error"
         });
     }
 }
