@@ -1,18 +1,24 @@
 // ========================================
-// CSLLM - FRONTEND JAVASCRIPT
+// CSLLM FRONTEND
+// Works on Vercel AND GitHub Pages
 // ========================================
 
-// Your Vercel backend
-const API_URL = "https://csllm.vercel.app/api/chat";
+const API_URL =
+    "https://csllm.vercel.app/api/chat";
 
 
 // ========================================
-// GET HTML ELEMENTS
+// HTML ELEMENTS
 // ========================================
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("messageInput");
-const history = document.getElementById("history");
+const chat =
+    document.getElementById("chat");
+
+const input =
+    document.getElementById("messageInput");
+
+const history =
+    document.getElementById("history");
 
 
 // ========================================
@@ -21,66 +27,77 @@ const history = document.getElementById("history");
 
 async function sendMessage() {
 
-    const text = input.value.trim();
+    const text =
+        input.value.trim();
 
-    // Don't send empty messages
+
     if (!text) {
         return;
     }
 
-    // Remove welcome screen
+
     removeWelcome();
 
-    // Display user's message
-    addMessage(text, "user");
 
-    // Add conversation to history
+    // Add user message
+    addMessage(
+        text,
+        "user"
+    );
+
+
+    // Add to history
     addHistory(text);
+
 
     // Clear input
     input.value = "";
 
-    // Reset textarea height
     input.style.height = "auto";
 
 
-    // Show loading message
-    const loadingMessage = addMessage(
-        "Thinking...",
-        "ai"
-    );
+    // Loading message
+    const loading =
+        addMessage(
+            "Thinking...",
+            "ai"
+        );
 
 
     try {
 
-        // Send message to Vercel
-        const response = await fetch(
-            API_URL,
-            {
-                method: "POST",
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                body: JSON.stringify({
-                    message: text
-                })
-            }
+                    body: JSON.stringify({
+                        message: text
+                    })
+                }
+            );
+
+
+        const responseText =
+            await response.text();
+
+
+        console.log(
+            "Backend status:",
+            response.status
         );
 
 
-        // Get response text first
-        // This lets us see errors from the backend
-        const responseText = await response.text();
-
-
-        // Check HTTP status
         if (!response.ok) {
 
             console.error(
                 "Backend error:",
-                response.status,
                 responseText
             );
 
@@ -90,35 +107,33 @@ async function sendMessage() {
         }
 
 
-        // Convert response to JSON
         let data;
+
 
         try {
 
-            data = JSON.parse(responseText);
+            data =
+                JSON.parse(
+                    responseText
+                );
 
-        } catch (error) {
-
-            console.error(
-                "Invalid JSON received:",
-                responseText
-            );
+        } catch {
 
             throw new Error(
-                "The server returned invalid data."
+                "Invalid response from server."
             );
         }
 
 
-        // Remove "Thinking..."
-        loadingMessage.remove();
+        // Remove loading
+        loading.remove();
 
 
-        // Check for an error returned by backend
         if (data.error) {
 
             addMessage(
-                "AI Error: " + data.error,
+                "AI Error: " +
+                data.error,
                 "ai"
             );
 
@@ -126,7 +141,6 @@ async function sendMessage() {
         }
 
 
-        // Check for AI response
         if (data.reply) {
 
             addMessage(
@@ -151,15 +165,13 @@ async function sendMessage() {
         );
 
 
-        // Remove loading message
-        if (loadingMessage) {
-            loadingMessage.remove();
+        if (loading) {
+            loading.remove();
         }
 
 
-        // Display error
         addMessage(
-            "Sorry, I couldn't connect to CSLLM. Check the browser console for the error.",
+            "Sorry, I couldn't connect to CSLLM.",
             "ai"
         );
     }
@@ -170,65 +182,80 @@ async function sendMessage() {
 // ADD MESSAGE
 // ========================================
 
-function addMessage(text, type) {
+function addMessage(
+    text,
+    type
+) {
 
-    const message = document.createElement("div");
-
-    message.className = `message ${type}`;
-
-
-    const content = document.createElement("div");
-
-    content.className = "message-content";
+    const message =
+        document.createElement("div");
 
 
-    // textContent prevents AI responses
-    // from being treated as HTML
-    content.textContent = text;
+    message.className =
+        `message ${type}`;
 
 
-    message.appendChild(content);
-
-    chat.appendChild(message);
-
-
-    // Scroll to newest message
-    chat.scrollTop = chat.scrollHeight;
+    const content =
+        document.createElement("div");
 
 
-    // Return message
+    content.className =
+        "message-content";
+
+
+    content.textContent =
+        text;
+
+
+    message.appendChild(
+        content
+    );
+
+
+    chat.appendChild(
+        message
+    );
+
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+
     return message;
 }
 
 
 // ========================================
-// REMOVE WELCOME SCREEN
+// REMOVE WELCOME
 // ========================================
 
 function removeWelcome() {
 
     const welcome =
-        document.getElementById("welcome");
+        document.getElementById(
+            "welcome"
+        );
+
 
     if (welcome) {
-
         welcome.remove();
-
     }
 }
 
 
 // ========================================
-// SUGGESTION BUTTON
+// SUGGESTIONS
 // ========================================
 
 function suggest(text) {
 
-    input.value = text;
+    input.value =
+        text;
 
 
-    // Resize textarea
-    input.style.height = "auto";
+    input.style.height =
+        "auto";
+
 
     input.style.height =
         Math.min(
@@ -240,7 +267,6 @@ function suggest(text) {
     input.focus();
 
 
-    // Send suggestion
     sendMessage();
 }
 
@@ -252,45 +278,66 @@ function suggest(text) {
 function newChat() {
 
     chat.innerHTML = `
-        <div class="welcome" id="welcome">
 
-            <h1>How can I help?</h1>
+        <div
+            class="welcome"
+            id="welcome"
+        >
 
-            <p>Ask me anything.</p>
+            <h1>
+                How can I help?
+            </h1>
+
+            <p>
+                Ask me anything.
+            </p>
 
             <div class="suggestions">
 
                 <button
-                    onclick="suggest('Explain how AI works')">
+                    onclick="suggest(
+                        'Explain how AI works'
+                    )"
+                >
                     Explain how AI works
                 </button>
 
+
                 <button
-                    onclick="suggest('Help me with my homework')">
+                    onclick="suggest(
+                        'Help me with my homework'
+                    )"
+                >
                     Help me with my homework
                 </button>
 
+
                 <button
-                    onclick="suggest('Give me a fun project idea')">
+                    onclick="suggest(
+                        'Give me a fun project idea'
+                    )"
+                >
                     Give me a project idea
                 </button>
 
             </div>
 
         </div>
+
     `;
 
 
     input.value = "";
 
-    input.style.height = "auto";
+    input.style.height =
+        "auto";
 
     input.focus();
 }
 
 
 // ========================================
-// CHAT HISTORY
+// HISTORY
 // ========================================
 
 function addHistory(text) {
@@ -308,53 +355,35 @@ function addHistory(text) {
         "history-item";
 
 
-    // Don't put extremely long messages
-    // into the sidebar
-    let displayText = text;
+    let displayText =
+        text;
+
 
     if (displayText.length > 40) {
 
         displayText =
-            displayText.substring(0, 40)
-            + "...";
+            displayText.substring(
+                0,
+                40
+            ) + "...";
     }
 
 
-    item.textContent = displayText;
+    item.textContent =
+        displayText;
 
 
-    // Newest conversation at top
-    history.prepend(item);
+    history.prepend(
+        item
+    );
 }
 
 
 // ========================================
-// MOBILE SIDEBAR
-// ========================================
-
-function toggleSidebar() {
-
-    const sidebar =
-        document.querySelector(".sidebar");
-
-
-    if (!sidebar) {
-        return;
-    }
-
-
-    sidebar.classList.toggle("open");
-}
-
-
-// ========================================
-// KEYBOARD INPUT
+// KEYBOARD
 // ========================================
 
 function handleKey(event) {
-
-    // Enter = send
-    // Shift + Enter = new line
 
     if (
         event.key === "Enter" &&
@@ -369,7 +398,7 @@ function handleKey(event) {
 
 
 // ========================================
-// TEXTAREA AUTO RESIZE
+// AUTO RESIZE TEXTAREA
 // ========================================
 
 if (input) {
@@ -378,7 +407,9 @@ if (input) {
         "input",
         () => {
 
-            input.style.height = "auto";
+            input.style.height =
+                "auto";
+
 
             input.style.height =
                 Math.min(
@@ -391,31 +422,24 @@ if (input) {
 
 
 // ========================================
-// CLOSE SIDEBAR ON MOBILE
+// SIDEBAR
 // ========================================
 
-if (chat) {
+function toggleSidebar() {
 
-    chat.addEventListener(
-        "click",
-        () => {
-
-            const sidebar =
-                document.querySelector(
-                    ".sidebar"
-                );
+    const sidebar =
+        document.querySelector(
+            ".sidebar"
+        );
 
 
-            if (
-                sidebar &&
-                window.innerWidth <= 700
-            ) {
+    if (!sidebar) {
+        return;
+    }
 
-                sidebar.classList.remove(
-                    "open"
-                );
-            }
-        }
+
+    sidebar.classList.toggle(
+        "open"
     );
 }
 
@@ -425,10 +449,10 @@ if (chat) {
 // ========================================
 
 console.log(
-    "CSLLM frontend loaded."
+    "CSLLM loaded."
 );
 
 console.log(
-    "Backend:",
+    "AI backend:",
     API_URL
 );
