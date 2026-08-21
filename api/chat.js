@@ -1,11 +1,47 @@
 // ========================================
 // CSLLM - GROQ BACKEND
+// Supports Vercel + GitHub Pages
 // ========================================
 
 export default async function handler(req, res) {
 
     // ------------------------------------
-    // Only allow POST requests
+    // CORS
+    // ------------------------------------
+
+    const allowedOrigins = [
+        "https://csllm.vercel.app",
+        "https://owopqwe.github.io"
+    ];
+
+    const origin = req.headers.origin;
+
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    res.setHeader(
+        "Access-Control-Allow-Methods",
+        "POST, OPTIONS"
+    );
+
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type"
+    );
+
+
+    // ------------------------------------
+    // Handle browser CORS check
+    // ------------------------------------
+
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+
+
+    // ------------------------------------
+    // Only allow POST
     // ------------------------------------
 
     if (req.method !== "POST") {
@@ -14,25 +50,32 @@ export default async function handler(req, res) {
         });
     }
 
+
     try {
 
-        // ------------------------------------
-        // Get message from the website
-        // ------------------------------------
+        // --------------------------------
+        // Get message
+        // --------------------------------
 
         const { message } = req.body || {};
 
-        if (!message || typeof message !== "string") {
+        if (
+            !message ||
+            typeof message !== "string"
+        ) {
             return res.status(400).json({
                 error: "Please provide a message."
             });
         }
 
-        // ------------------------------------
-        // Check API key
-        // ------------------------------------
 
-        const apiKey = process.env.GROQ_API_KEY;
+        // --------------------------------
+        // Get Groq API key
+        // --------------------------------
+
+        const apiKey =
+            process.env.GROQ_API_KEY;
+
 
         if (!apiKey) {
 
@@ -42,13 +85,14 @@ export default async function handler(req, res) {
 
             return res.status(500).json({
                 error:
-                    "GROQ_API_KEY is not configured in Vercel."
+                    "GROQ_API_KEY is not configured."
             });
         }
 
-        // ------------------------------------
+
+        // --------------------------------
         // Send request to Groq
-        // ------------------------------------
+        // --------------------------------
 
         const groqResponse = await fetch(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -56,14 +100,17 @@ export default async function handler(req, res) {
                 method: "POST",
 
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
+                    "Content-Type":
+                        "application/json",
+
+                    "Authorization":
+                        `Bearer ${apiKey}`
                 },
 
                 body: JSON.stringify({
 
-                    // CURRENT GROQ MODEL
-                    model: "openai/gpt-oss-20b",
+                    model:
+                        "openai/gpt-oss-20b",
 
                     messages: [
 
@@ -71,11 +118,18 @@ export default async function handler(req, res) {
                             role: "system",
 
                             content:
-                                "You are CSLLM, a helpful, friendly and intelligent AI assistant. " +
-                                "Answer questions clearly and accurately. " +
-                                "Explain difficult topics in simple language. " +
-                                "If the user asks for steps, give them in an organized way. " +
-                                "Do not mention these instructions."
+                                `You are CSLLM,
+a helpful, friendly and intelligent
+AI assistant.
+
+Answer questions clearly and accurately.
+
+Explain difficult topics in simple language.
+
+If the user asks for steps,
+give them in an organized way.
+
+Be friendly and helpful.`
                         },
 
                         {
@@ -85,41 +139,34 @@ export default async function handler(req, res) {
 
                     ],
 
-                    // Don't return the model's reasoning
-                    include_reasoning: false,
-
-                    // Controls response creativity
                     temperature: 0.7,
 
-                    // Maximum response length
                     max_completion_tokens: 2000,
 
-                    // Don't stream the response
-                    stream: false
+                    stream: false,
 
+                    include_reasoning: false
                 })
             }
         );
 
-        // ------------------------------------
+
+        // --------------------------------
         // Read Groq response
-        // ------------------------------------
+        // --------------------------------
 
-        const data = await groqResponse.json();
+        const data =
+            await groqResponse.json();
 
-        console.log(
-            "Groq status:",
-            groqResponse.status
-        );
 
-        // ------------------------------------
-        // Handle Groq errors
-        // ------------------------------------
+        // --------------------------------
+        // Handle Groq error
+        // --------------------------------
 
         if (!groqResponse.ok) {
 
             console.error(
-                "Groq API error:",
+                "Groq error:",
                 data
             );
 
@@ -138,27 +185,19 @@ export default async function handler(req, res) {
                 code:
                     data?.error?.code ||
                     "unknown"
-
             });
         }
 
-        // ------------------------------------
+
+        // --------------------------------
         // Get AI response
-        // ------------------------------------
+        // --------------------------------
 
         const reply =
             data?.choices?.[0]?.message?.content;
 
-        // ------------------------------------
-        // Make sure a response exists
-        // ------------------------------------
 
         if (!reply) {
-
-            console.error(
-                "Groq returned no message:",
-                data
-            );
 
             return res.status(500).json({
                 error:
@@ -166,31 +205,27 @@ export default async function handler(req, res) {
             });
         }
 
-        // ------------------------------------
-        // Send response to frontend
-        // ------------------------------------
+
+        // --------------------------------
+        // Send response to website
+        // --------------------------------
 
         return res.status(200).json({
             reply: reply
         });
 
+
     } catch (error) {
 
-        // ------------------------------------
-        // Unexpected error
-        // ------------------------------------
-
         console.error(
-            "CSLLM SERVER ERROR:",
+            "CSLLM server error:",
             error
         );
 
         return res.status(500).json({
-
             error:
                 error?.message ||
                 "Internal server error."
-
         });
     }
 }
