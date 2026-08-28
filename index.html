@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +24,7 @@
 <aside class="sidebar">
 
     <div class="sidebar-header">
+
         <h1>Charlie's AI</h1>
 
         <button
@@ -32,6 +34,7 @@
         >
             + New Chat
         </button>
+
     </div>
 
     <div
@@ -45,7 +48,11 @@
 <main class="chat-area">
 
     <header class="chat-header">
-        <h2 id="chatTitle">New Chat</h2>
+
+        <h2 id="chatTitle">
+            New Chat
+        </h2>
+
     </header>
 
 
@@ -53,74 +60,16 @@
         id="messages"
         class="messages"
     >
+
         <div class="welcome">
 
-            <h2>Welcome to Charlie's AI</h2>
+            <h2>
+                Welcome to Charlie's AI
+            </h2>
 
             <p>
                 Ask me anything, or ask me to create a graph.
             </p>
-
-        </div>
-    </div>
-
-
-    <div class="controls">
-
-        <div class="option-group">
-
-            <label for="responseType">
-                Response Type
-            </label>
-
-            <select id="responseType">
-
-                <option value="normal">
-                    Normal
-                </option>
-
-                <option value="explain">
-                    Explain
-                </option>
-
-                <option value="graph">
-                    Graph
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <div class="option-group">
-
-            <label for="graphType">
-                Graph Type
-            </label>
-
-            <select id="graphType">
-
-                <option value="auto">
-                    Automatic
-                </option>
-
-                <option value="bar">
-                    Bar
-                </option>
-
-                <option value="line">
-                    Line
-                </option>
-
-                <option value="pie">
-                    Pie
-                </option>
-
-                <option value="scatter">
-                    Scatter
-                </option>
-
-            </select>
 
         </div>
 
@@ -140,6 +89,7 @@
             id="sendButton"
             class="send-button"
             type="button"
+            aria-label="Send message"
         >
             Send
         </button>
