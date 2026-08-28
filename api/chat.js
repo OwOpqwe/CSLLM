@@ -1,45 +1,20 @@
-"use strict";
-
+```javascript
 // ============================================================
 // CSLLM BACKEND
-// ============================================================
-//
-// File location:
-//
-//     /api/chat.js
-//
-// IMPORTANT:
-// Put your Groq API key in Vercel Environment Variables:
-//
-//     GROQ_API_KEY
-//
-// DO NOT put the API key in script.js.
+// api/chat.js
 // ============================================================
 
-const GROQ_API_URL =
-    "https://api.groq.com/openai/v1/chat/completions";
+const MODEL = "openai/gpt-oss-20b";
 
-// Use the Vercel environment variable GROQ_MODEL.
-// If you don't create it, this is the default.
-//
-// IMPORTANT:
-// You previously received "model_not_found" for
-// llama-3.3-70b-versatile.
-// If that happens again, change GROQ_MODEL in Vercel.
-const MODEL =
-    process.env.GROQ_MODEL ||
-    "llama-3.3-70b-versatile";
+export default async function handler(req, res) {
 
-
-// ============================================================
-// CORS
-// ============================================================
-
-function setCorsHeaders(res) {
+    // --------------------------------------------------------
+    // CORS
+    // --------------------------------------------------------
 
     res.setHeader(
         "Access-Control-Allow-Origin",
-        "https://owopqwe.github.io"
+        "*"
     );
 
     res.setHeader(
@@ -51,29 +26,15 @@ function setCorsHeaders(res) {
         "Access-Control-Allow-Headers",
         "Content-Type"
     );
-}
-
-
-// ============================================================
-// MAIN API FUNCTION
-// ============================================================
-
-module.exports = async function handler(req, res) {
-
-    // --------------------------------------------------------
-    // CORS
-    // --------------------------------------------------------
-
-    setCorsHeaders(res);
 
 
     // --------------------------------------------------------
-    // OPTIONS / PREFLIGHT
+    // PREFLIGHT
     // --------------------------------------------------------
 
     if (req.method === "OPTIONS") {
 
-        return res.status(204).end();
+        return res.status(200).end();
 
     }
 
@@ -85,43 +46,41 @@ module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
 
         return res.status(405).json({
-            error: "Method not allowed."
+            error: "Method not allowed"
         });
 
     }
 
-
-    // --------------------------------------------------------
-    // API KEY CHECK
-    // --------------------------------------------------------
-
-    const apiKey =
-        process.env.GROQ_API_KEY;
-
-
-    if (!apiKey) {
-
-        console.error(
-            "GROQ_API_KEY is missing."
-        );
-
-        return res.status(500).json({
-            error:
-                "The AI backend is not configured. GROQ_API_KEY is missing from Vercel."
-        });
-
-    }
-
-
-    // --------------------------------------------------------
-    // READ REQUEST
-    // --------------------------------------------------------
 
     try {
 
+        // ----------------------------------------------------
+        // CHECK API KEY
+        // ----------------------------------------------------
+
+        const apiKey =
+            process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+
+            console.error(
+                "GROQ_API_KEY is missing."
+            );
+
+            return res.status(500).json({
+                error:
+                    "GROQ_API_KEY is not configured in Vercel."
+            });
+
+        }
+
+
+        // ----------------------------------------------------
+        // GET REQUEST BODY
+        // ----------------------------------------------------
+
         const body =
             req.body || {};
-
 
         let messages =
             body.messages;
@@ -135,7 +94,7 @@ module.exports = async function handler(req, res) {
 
             return res.status(400).json({
                 error:
-                    "Invalid request. 'messages' must be an array."
+                    "Request must contain a messages array."
             });
 
         }
@@ -150,146 +109,79 @@ module.exports = async function handler(req, res) {
                 .filter(
                     message =>
                         message &&
-                        typeof message === "object" &&
-                        typeof message.role === "string" &&
-                        typeof message.content === "string"
+                        typeof message.content ===
+                            "string" &&
+                        (
+                            message.role ===
+                                "user" ||
+                            message.role ===
+                                "assistant" ||
+                            message.role ===
+                                "system"
+                        )
                 )
                 .map(
-                    message => {
+                    message => ({
+                        role:
+                            message.role,
 
-                        let role =
-                            message.role;
-
-
-                        // Only allow roles supported by
-                        // the chat completion API.
-
-                        if (
-                            role !== "user" &&
-                            role !== "assistant" &&
-                            role !== "system"
-                        ) {
-
-                            role =
-                                "user";
-
-                        }
-
-
-                        return {
-
-                            role:
-                                role,
-
-                            content:
-                                message.content.trim()
-
-                        };
-
-                    }
-                )
-                .filter(
-                    message =>
-                        message.content.length > 0
+                        content:
+                            message.content
+                    })
                 );
 
 
-        // ----------------------------------------------------
-        // LIMIT HISTORY
-        // ----------------------------------------------------
-        //
-        // Prevent enormous requests if someone has a huge chat.
-        //
-        // Keep the most recent 40 messages.
-        //
-
-        if (
-            messages.length > 40
-        ) {
-
-            messages =
-                messages.slice(
-                    -40
-                );
-
-        }
-
-
-        if (
-            messages.length === 0
-        ) {
+        if (messages.length === 0) {
 
             return res.status(400).json({
                 error:
-                    "No messages were provided."
+                    "No valid messages were provided."
             });
 
         }
 
 
         // ----------------------------------------------------
-        // SYSTEM PROMPT
+        // OPTIONAL SYSTEM MESSAGE
         // ----------------------------------------------------
 
         const systemMessage = {
-
-            role:
-                "system",
+            role: "system",
 
             content:
                 "You are CSLLM, a helpful AI assistant. " +
-                "Answer clearly and naturally. " +
-                "Remember the conversation provided in the messages. " +
-                "If the user tells you their name, remember it " +
-                "and use it when appropriate."
-
+                "Answer clearly, accurately, and naturally."
         };
 
 
-        const finalMessages = [
-
+        messages = [
             systemMessage,
-
             ...messages
-
         ];
 
 
         // ----------------------------------------------------
-        // SEND TO GROQ
+        // CALL GROQ
         // ----------------------------------------------------
 
         console.log(
-            "Sending request to Groq."
-        );
-
-        console.log(
-            "Model:",
+            "Calling Groq with model:",
             MODEL
-        );
-
-        console.log(
-            "Message count:",
-            finalMessages.length
         );
 
 
         const groqResponse =
             await fetch(
-                GROQ_API_URL,
+                "https://api.groq.com/openai/v1/chat/completions",
                 {
-
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json",
 
                         "Authorization":
                             `Bearer ${apiKey}`
-
                     },
 
                     body:
@@ -299,16 +191,15 @@ module.exports = async function handler(req, res) {
                                 MODEL,
 
                             messages:
-                                finalMessages,
+                                messages,
 
                             temperature:
                                 0.7,
 
-                            max_tokens:
+                            max_completion_tokens:
                                 2048
 
                         })
-
                 }
             );
 
@@ -317,23 +208,22 @@ module.exports = async function handler(req, res) {
         // READ GROQ RESPONSE
         // ----------------------------------------------------
 
-        const responseText =
+        const raw =
             await groqResponse.text();
 
 
         let data;
 
-
         try {
 
             data =
-                JSON.parse(
-                    responseText
-                );
+                JSON.parse(raw);
 
         } catch {
 
-            data = null;
+            data = {
+                error: raw
+            };
 
         }
 
@@ -342,44 +232,13 @@ module.exports = async function handler(req, res) {
         // GROQ ERROR
         // ----------------------------------------------------
 
-        if (
-            !groqResponse.ok
-        ) {
+        if (!groqResponse.ok) {
 
             console.error(
                 "Groq API error:",
                 groqResponse.status,
-                responseText
+                data
             );
-
-
-            let errorMessage =
-                "The AI provider returned an error.";
-
-
-            if (
-                data &&
-                data.error
-            ) {
-
-                if (
-                    typeof data.error ===
-                    "string"
-                ) {
-
-                    errorMessage =
-                        data.error;
-
-                } else if (
-                    data.error.message
-                ) {
-
-                    errorMessage =
-                        data.error.message;
-
-                }
-
-            }
 
 
             return res.status(
@@ -387,7 +246,9 @@ module.exports = async function handler(req, res) {
             ).json({
 
                 error:
-                    errorMessage,
+                    data?.error?.message ||
+                    data?.error ||
+                    "Groq API request failed.",
 
                 provider_status:
                     groqResponse.status
@@ -401,11 +262,13 @@ module.exports = async function handler(req, res) {
         // EXTRACT AI RESPONSE
         // ----------------------------------------------------
 
+        const reply =
+            data?.choices?.[0]?.message?.content;
+
+
         if (
-            !data ||
-            !data.choices ||
-            !data.choices[0] ||
-            !data.choices[0].message
+            !reply ||
+            typeof reply !== "string"
         ) {
 
             console.error(
@@ -416,40 +279,20 @@ module.exports = async function handler(req, res) {
 
             return res.status(500).json({
                 error:
-                    "The AI returned an unexpected response."
-            });
-
-        }
-
-
-        const reply =
-            data
-                .choices[0]
-                .message
-                .content;
-
-
-        if (
-            typeof reply !== "string" ||
-            !reply.trim()
-        ) {
-
-            return res.status(500).json({
-                error:
-                    "The AI returned an empty response."
+                    "Groq returned an empty response."
             });
 
         }
 
 
         // ----------------------------------------------------
-        // SUCCESS
+        // RETURN RESPONSE TO FRONTEND
         // ----------------------------------------------------
 
         return res.status(200).json({
 
             reply:
-                reply.trim()
+                reply
 
         });
 
@@ -457,7 +300,7 @@ module.exports = async function handler(req, res) {
     } catch (error) {
 
         // ----------------------------------------------------
-        // SERVER ERROR
+        // UNEXPECTED SERVER ERROR
         // ----------------------------------------------------
 
         console.error(
@@ -469,10 +312,12 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({
 
             error:
-                "The AI backend encountered an unexpected error."
+                error?.message ||
+                "Internal server error."
 
         });
 
     }
 
-};
+}
+```
