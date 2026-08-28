@@ -25,7 +25,7 @@ newChatButton = document.getElementById("newChatButton");
 chatList = document.getElementById("chatList");
 chatTitle = document.getElementById("chatTitle");
 
-```
+
 if (!messagesContainer) {
     console.error("Charlie's AI: Missing #messages");
 }
@@ -41,7 +41,7 @@ if (!sendButton) {
 if (!chatList) {
     console.warn("Charlie's AI: Missing #chatList");
 }
-```
+
 
 }
 
@@ -56,7 +56,7 @@ title: "New Chat",
 messages: []
 };
 
-```
+
 chats.unshift(chat);
 currentChatId = chat.id;
 
@@ -69,7 +69,7 @@ if (messageInput) {
     messageInput.style.height = "auto";
     messageInput.focus();
 }
-```
+
 
 }
 
@@ -82,7 +82,7 @@ if (event) {
 event.stopPropagation();
 }
 
-```
+
 chats = chats.filter(
     chat => chat.id !== chatId
 );
@@ -99,7 +99,7 @@ if (currentChatId === chatId) {
 
 saveChats();
 renderChatList();
-```
+
 
 }
 
@@ -132,7 +132,7 @@ localStorage.getItem(
 "charlies_ai_chats"
 );
 
-```
+
     if (saved) {
         chats = JSON.parse(saved);
     }
@@ -158,7 +158,7 @@ currentChatId = chats[0].id;
 
 renderChatList();
 loadChat(currentChatId);
-```
+
 
 }
 
@@ -181,7 +181,7 @@ if (!chatList) {
 return;
 }
 
-```
+
 chatList.innerHTML = "";
 
 chats.forEach(chat => {
@@ -241,7 +241,7 @@ chats.forEach(chat => {
 
     chatList.appendChild(chatItem);
 });
-```
+
 
 }
 
@@ -254,7 +254,7 @@ const chat = chats.find(
 item => item.id === chatId
 );
 
-```
+
 if (!chat) {
     console.error(
         "Charlie's AI: Chat not found:",
@@ -294,7 +294,7 @@ chat.messages.forEach(message => {
 });
 
 scrollToBottom();
-```
+
 
 }
 
@@ -307,7 +307,7 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 const welcome =
     document.createElement("div");
 
@@ -329,7 +329,7 @@ welcome.appendChild(heading);
 welcome.appendChild(paragraph);
 
 messagesContainer.appendChild(welcome);
-```
+
 
 }
 
@@ -345,10 +345,10 @@ typeof content !== "string"
 return null;
 }
 
-````
+`
 const graphMatch =
     content.match(
-        /```graph\s*([\s\S]*?)```/i
+        /graph\s*([\s\S]*?)/i
     );
 
 if (!graphMatch) {
@@ -367,7 +367,7 @@ try {
 
     return null;
 }
-````
+`
 
 }
 
@@ -383,14 +383,14 @@ typeof content !== "string"
 return "";
 }
 
-````
+`
 return content
     .replace(
-        /```graph\s*[\s\S]*?```/gi,
+        /graph\s*[\s\S]*?/gi,
         ""
     )
     .trim();
-````
+`
 
 }
 
@@ -406,7 +406,7 @@ if (!graphData) {
 return false;
 }
 
-```
+
 if (
     typeof Chart === "undefined"
 ) {
@@ -619,7 +619,7 @@ try {
 
     return false;
 }
-```
+
 
 }
 
@@ -637,7 +637,7 @@ console.error(
 "Charlie's AI: Missing #messages"
 );
 
-```
+
     return;
 }
 
@@ -729,7 +729,7 @@ messagesContainer.appendChild(
 if (scroll) {
     scrollToBottom();
 }
-```
+
 
 }
 
@@ -742,7 +742,7 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 removeTypingIndicator();
 
 const typing =
@@ -770,7 +770,7 @@ messagesContainer.appendChild(
 );
 
 scrollToBottom();
-```
+
 
 }
 
@@ -784,11 +784,11 @@ document.getElementById(
 "typingIndicator"
 );
 
-```
+
 if (typing) {
     typing.remove();
 }
-```
+
 
 }
 
@@ -801,10 +801,10 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 messagesContainer.scrollTop =
     messagesContainer.scrollHeight;
-```
+
 
 }
 
@@ -820,7 +820,7 @@ if (!chat) {
 return;
 }
 
-```
+
 if (
     !Array.isArray(
         chat.messages
@@ -848,7 +848,7 @@ if (
     chat.title =
         title || "New Chat";
 }
-```
+
 
 }
 
@@ -858,7 +858,7 @@ if (
 
 async function sendMessage() {
 
-```
+
 if (isSending) {
     return;
 }
@@ -1157,7 +1157,7 @@ try {
         messageInput.focus();
     }
 }
-```
+
 
 }
 
@@ -1172,10 +1172,10 @@ event.key === "Enter" &&
 ) {
 event.preventDefault();
 
-```
+
     sendMessage();
 }
-```
+
 
 }
 
@@ -1188,7 +1188,7 @@ if (!messageInput) {
 return;
 }
 
-```
+
 messageInput.style.height =
     "auto";
 
@@ -1197,7 +1197,7 @@ messageInput.style.height =
         messageInput.scrollHeight,
         200
     ) + "px";
-```
+
 
 }
 
@@ -1210,14 +1210,14 @@ if (!messageInput) {
 return;
 }
 
-```
+
 messageInput.value =
     text;
 
 resizeTextarea();
 
 messageInput.focus();
-```
+
 
 }
 
@@ -1231,7 +1231,7 @@ confirm(
 "Delete all chats?"
 );
 
-```
+
 if (!confirmed) {
     return;
 }
@@ -1245,7 +1245,7 @@ chats = [];
 currentChatId = null;
 
 createNewChat();
-```
+
 
 }
 
@@ -1255,7 +1255,7 @@ createNewChat();
 
 function setupEvents() {
 
-```
+
 if (sendButton) {
     sendButton.addEventListener(
         "click",
@@ -1282,7 +1282,7 @@ if (messageInput) {
         resizeTextarea
     );
 }
-```
+
 
 }
 
@@ -1315,11 +1315,11 @@ clearAllChats;
 function initialize() {
 checkElements();
 
-```
+
 setupEvents();
 
 loadSavedChats();
-```
+
 
 }
 
@@ -1332,17 +1332,17 @@ document.readyState ===
 "loading"
 ) {
 
-```
+
 document.addEventListener(
     "DOMContentLoaded",
     initialize
 );
-```
+
 
 } else {
 
-```
+
 initialize();
-```
+
 
 }
