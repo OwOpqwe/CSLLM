@@ -2,7 +2,7 @@ const MODEL = "openai/gpt-oss-20b";
 
 export default async function handler(req, res) {
 
-```
+
 res.setHeader(
     "Access-Control-Allow-Origin",
     "*"
@@ -136,7 +136,7 @@ try {
     const graphInstruction =
         responseType === "graph"
             ? `
-```
+
 
 The user has selected GRAPH mode.
 
@@ -187,9 +187,9 @@ Return valid JSON:
 Do not create a graph unless the user clearly requests one.
 `;
 
-```
+
     const systemInstruction = `
-```
+
 
 You are Charlie's AI, a helpful educational and general-purpose AI assistant.
 
@@ -213,7 +213,7 @@ Response type: ${responseType}
 Graph type: ${graphType}
 `;
 
-````
+`
     const finalMessages = [
         {
             role: "system",
@@ -345,15 +345,15 @@ Graph type: ${graphType}
             JSON.parse(
                 content
                     .replace(
-                        /^```json\s*/i,
+                        /^json\s*/i,
                         ""
                     )
                     .replace(
-                        /^```\s*/i,
+                        /^\s*/i,
                         ""
                     )
                     .replace(
-                        /\s*```$/i,
+                        /\s*$/i,
                         ""
                     )
                     .trim()
@@ -400,6 +400,6 @@ Graph type: ${graphType}
     });
 
 }
-````
+`
 
 }
