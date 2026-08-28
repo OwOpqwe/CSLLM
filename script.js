@@ -1,5 +1,15 @@
 "use strict";
 
+/*
+
+* CHARLIE'S AI FRONTEND
+*
+* Backend:
+* https://csllm.vercel.app/api/chat
+*
+* API key stays on the backend.
+  */
+
 const API_URL = "https://csllm.vercel.app/api/chat";
 
 let chats = [];
@@ -12,19 +22,58 @@ let sendButton = null;
 let newChatButton = null;
 let chatList = null;
 let chatTitle = null;
+let clearChatsButton = null;
 
-// ============================================
-// CHECK DOM ELEMENTS
-// ============================================
+let graphContainer = null;
+let graphCanvas = null;
+let graphTitle = null;
+let graphType = null;
+let closeGraphButton = null;
+
+let currentChart = null;
+let currentGraphData = null;
+
+/* ============================================
+CHECK DOM ELEMENTS
+============================================ */
 
 function checkElements() {
-messagesContainer = document.getElementById("messages");
-messageInput = document.getElementById("messageInput");
-sendButton = document.getElementById("sendButton");
-newChatButton = document.getElementById("newChatButton");
-chatList = document.getElementById("chatList");
-chatTitle = document.getElementById("chatTitle");
+messagesContainer =
+document.getElementById("messages");
 
+
+messageInput =
+    document.getElementById("messageInput");
+
+sendButton =
+    document.getElementById("sendButton");
+
+newChatButton =
+    document.getElementById("newChatButton");
+
+chatList =
+    document.getElementById("chatList");
+
+chatTitle =
+    document.getElementById("chatTitle");
+
+clearChatsButton =
+    document.getElementById("clearChatsButton");
+
+graphContainer =
+    document.getElementById("graphContainer");
+
+graphCanvas =
+    document.getElementById("graphCanvas");
+
+graphTitle =
+    document.getElementById("graphTitle");
+
+graphType =
+    document.getElementById("graphType");
+
+closeGraphButton =
+    document.getElementById("closeGraphButton");
 
 if (!messagesContainer) {
     console.error("Charlie's AI: Missing #messages");
@@ -45,9 +94,9 @@ if (!chatList) {
 
 }
 
-// ============================================
-// CREATE NEW CHAT
-// ============================================
+/* ============================================
+CREATE NEW CHAT
+============================================ */
 
 function createNewChat() {
 const chat = {
@@ -58,24 +107,26 @@ messages: []
 
 
 chats.unshift(chat);
+
 currentChatId = chat.id;
 
 saveChats();
 renderChatList();
 loadChat(chat.id);
 
+hideGraph();
+
 if (messageInput) {
     messageInput.value = "";
-    messageInput.style.height = "auto";
     messageInput.focus();
 }
 
 
 }
 
-// ============================================
-// DELETE CHAT
-// ============================================
+/* ============================================
+DELETE CHAT
+============================================ */
 
 function deleteChat(chatId, event) {
 if (event) {
@@ -103,9 +154,9 @@ renderChatList();
 
 }
 
-// ============================================
-// SAVE CHATS
-// ============================================
+/* ============================================
+SAVE CHATS
+============================================ */
 
 function saveChats() {
 try {
@@ -115,15 +166,15 @@ JSON.stringify(chats)
 );
 } catch (error) {
 console.error(
-"Charlie's AI: Could not save chats:",
+"Could not save chats:",
 error
 );
 }
 }
 
-// ============================================
-// LOAD SAVED CHATS
-// ============================================
+/* ============================================
+LOAD SAVED CHATS
+============================================ */
 
 function loadSavedChats() {
 try {
@@ -138,7 +189,7 @@ localStorage.getItem(
     }
 } catch (error) {
     console.error(
-        "Charlie's AI: Could not load chats:",
+        "Could not load chats:",
         error
     );
 
@@ -162,9 +213,9 @@ loadChat(currentChatId);
 
 }
 
-// ============================================
-// GET CURRENT CHAT
-// ============================================
+/* ============================================
+GET CURRENT CHAT
+============================================ */
 
 function getCurrentChat() {
 return chats.find(
@@ -172,9 +223,9 @@ chat => chat.id === currentChatId
 );
 }
 
-// ============================================
-// RENDER CHAT LIST
-// ============================================
+/* ============================================
+RENDER CHAT LIST
+============================================ */
 
 function renderChatList() {
 if (!chatList) {
@@ -236,6 +287,8 @@ chats.forEach(chat => {
 
             renderChatList();
             loadChat(chat.id);
+
+            hideGraph();
         }
     );
 
@@ -245,9 +298,9 @@ chats.forEach(chat => {
 
 }
 
-// ============================================
-// LOAD CHAT
-// ============================================
+/* ============================================
+LOAD CHAT
+============================================ */
 
 function loadChat(chatId) {
 const chat = chats.find(
@@ -257,7 +310,7 @@ item => item.id === chatId
 
 if (!chat) {
     console.error(
-        "Charlie's AI: Chat not found:",
+        "Chat not found:",
         chatId
     );
 
@@ -298,9 +351,9 @@ scrollToBottom();
 
 }
 
-// ============================================
-// WELCOME SCREEN
-// ============================================
+/* ============================================
+WELCOME
+============================================ */
 
 function showWelcome() {
 if (!messagesContainer) {
@@ -323,7 +376,7 @@ const paragraph =
     document.createElement("p");
 
 paragraph.textContent =
-    "Ask me anything or ask me to create a graph.";
+    "Ask me a question, analyze data, or create a graph.";
 
 welcome.appendChild(heading);
 welcome.appendChild(paragraph);
@@ -333,299 +386,9 @@ messagesContainer.appendChild(welcome);
 
 }
 
-// ============================================
-// EXTRACT GRAPH DATA
-// ============================================
-
-function extractGraph(content) {
-if (
-!content ||
-typeof content !== "string"
-) {
-return null;
-}
-
-`
-const graphMatch =
-    content.match(
-        /graph\s*([\s\S]*?)/i
-    );
-
-if (!graphMatch) {
-    return null;
-}
-
-try {
-    return JSON.parse(
-        graphMatch[1].trim()
-    );
-} catch (error) {
-    console.error(
-        "Charlie's AI: Invalid graph data:",
-        error
-    );
-
-    return null;
-}
-`
-
-}
-
-// ============================================
-// REMOVE GRAPH FROM TEXT
-// ============================================
-
-function removeGraphCode(content) {
-if (
-!content ||
-typeof content !== "string"
-) {
-return "";
-}
-
-`
-return content
-    .replace(
-        /graph\s*[\s\S]*?/gi,
-        ""
-    )
-    .trim();
-`
-
-}
-
-// ============================================
-// RENDER GRAPH
-// ============================================
-
-function renderGraph(
-graphData,
-container
-) {
-if (!graphData) {
-return false;
-}
-
-
-if (
-    typeof Chart === "undefined"
-) {
-    console.error(
-        "Charlie's AI: Chart.js is not loaded."
-    );
-
-    return false;
-}
-
-const canvas =
-    document.createElement("canvas");
-
-canvas.className =
-    "ai-graph";
-
-container.appendChild(canvas);
-
-const requestedType =
-    String(
-        graphData.type || "line"
-    ).toLowerCase();
-
-const allowedTypes = [
-    "line",
-    "bar",
-    "scatter",
-    "pie",
-    "doughnut",
-    "polararea"
-];
-
-let type =
-    requestedType;
-
-if (
-    !allowedTypes.includes(type)
-) {
-    type = "line";
-}
-
-if (type === "polararea") {
-    type = "polarArea";
-}
-
-let labels =
-    Array.isArray(
-        graphData.labels
-    )
-        ? graphData.labels
-        : [];
-
-let datasets =
-    Array.isArray(
-        graphData.datasets
-    )
-        ? graphData.datasets
-        : [];
-
-// Support simpler AI graph format
-if (
-    datasets.length === 0 &&
-    Array.isArray(
-        graphData.data
-    )
-) {
-    datasets = [
-        {
-            label:
-                graphData.label ||
-                "Data",
-            data:
-                graphData.data
-        }
-    ];
-}
-
-// Support x/y scatter data
-if (
-    type === "scatter" &&
-    datasets.length === 0 &&
-    Array.isArray(
-        graphData.points
-    )
-) {
-    datasets = [
-        {
-            label:
-                graphData.label ||
-                "Data",
-            data:
-                graphData.points
-        }
-    ];
-}
-
-if (datasets.length === 0) {
-    console.error(
-        "Charlie's AI: Graph has no datasets."
-    );
-
-    canvas.remove();
-
-    return false;
-}
-
-// Give datasets default settings
-datasets =
-    datasets.map(
-        dataset => {
-
-            const newDataset = {
-                ...dataset
-            };
-
-            if (
-                !newDataset.label
-            ) {
-                newDataset.label =
-                    "Data";
-            }
-
-            if (
-                !Array.isArray(
-                    newDataset.data
-                )
-            ) {
-                newDataset.data = [];
-            }
-
-            return newDataset;
-        }
-    );
-
-const options = {
-    responsive: true,
-
-    maintainAspectRatio: false,
-
-    animation: {
-        duration: 500
-    },
-
-    plugins: {
-        legend: {
-            display: true
-        }
-    }
-};
-
-// Axes for normal graphs
-if (
-    type === "line" ||
-    type === "bar"
-) {
-    options.scales = {
-        x: {
-            beginAtZero: false
-        },
-
-        y: {
-            beginAtZero: true
-        }
-    };
-}
-
-// Scatter graph
-if (
-    type === "scatter"
-) {
-    options.scales = {
-        x: {
-            type: "linear",
-            position: "bottom"
-        },
-
-        y: {
-            beginAtZero: false
-        }
-    };
-}
-
-const config = {
-    type: type,
-
-    data: {
-        labels: labels,
-
-        datasets: datasets
-    },
-
-    options: options
-};
-
-try {
-    new Chart(
-        canvas.getContext("2d"),
-        config
-    );
-
-    return true;
-
-} catch (error) {
-    console.error(
-        "Charlie's AI: Could not render graph:",
-        error
-    );
-
-    canvas.remove();
-
-    return false;
-}
-
-
-}
-
-// ============================================
-// ADD MESSAGE TO SCREEN
-// ============================================
+/* ============================================
+ADD MESSAGE
+============================================ */
 
 function addMessageToScreen(
 role,
@@ -633,19 +396,14 @@ content,
 scroll = true
 ) {
 if (!messagesContainer) {
-console.error(
-"Charlie's AI: Missing #messages"
-);
-
-
-    return;
+return;
 }
+
 
 const message =
     document.createElement("div");
 
-message.className =
-    "message";
+message.className = "message";
 
 if (role === "user") {
     message.classList.add(
@@ -663,68 +421,36 @@ const bubble =
 bubble.className =
     "message-bubble";
 
-const graph =
-    extractGraph(content);
+/*
+ * Do not show GRAPH_START / GRAPH_END
+ * as normal text.
+ */
+const cleanContent =
+    removeGraphSpecification(content);
 
-// ========================================
-// GRAPH MESSAGE
-// ========================================
-
-if (graph) {
-
-    const description =
-        removeGraphCode(content);
-
-    if (description) {
-        const descriptionElement =
-            document.createElement("div");
-
-        descriptionElement.className =
-            "graph-description";
-
-        descriptionElement.textContent =
-            description;
-
-        bubble.appendChild(
-            descriptionElement
-        );
-    }
-
-    const graphContainer =
-        document.createElement("div");
-
-    graphContainer.className =
-        "graph-container";
-
-    const graphSuccess =
-        renderGraph(
-            graph,
-            graphContainer
-        );
-
-    if (graphSuccess) {
-
-        bubble.appendChild(
-            graphContainer
-        );
-
-    } else {
-
-        bubble.textContent =
-            content;
-    }
-
-} else {
-
-    bubble.textContent =
-        content;
-}
+bubble.textContent =
+    cleanContent;
 
 message.appendChild(bubble);
 
-messagesContainer.appendChild(
-    message
-);
+messagesContainer.appendChild(message);
+
+/*
+ * If the message contains a graph,
+ * generate it.
+ */
+if (role === "assistant") {
+    const graphData =
+        extractGraphData(content);
+
+    if (graphData) {
+        currentGraphData = graphData;
+
+        showGraph(
+            graphData
+        );
+    }
+}
 
 if (scroll) {
     scrollToBottom();
@@ -733,9 +459,416 @@ if (scroll) {
 
 }
 
-// ============================================
-// TYPING INDICATOR
-// ============================================
+/* ============================================
+EXTRACT GRAPH DATA
+============================================ */
+
+function extractGraphData(text) {
+if (
+typeof text !== "string"
+) {
+return null;
+}
+
+
+const start =
+    text.indexOf(
+        "GRAPH_START"
+    );
+
+const end =
+    text.indexOf(
+        "GRAPH_END"
+    );
+
+if (
+    start === -1 ||
+    end === -1 ||
+    end <= start
+) {
+    return null;
+}
+
+const jsonText =
+    text.substring(
+        start + "GRAPH_START".length,
+        end
+    ).trim();
+
+try {
+    const data =
+        JSON.parse(jsonText);
+
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+        return null;
+    }
+
+    const allowedTypes = [
+        "line",
+        "bar",
+        "pie",
+        "doughnut",
+        "scatter",
+        "radar"
+    ];
+
+    if (
+        !allowedTypes.includes(
+            data.type
+        )
+    ) {
+        data.type = "line";
+    }
+
+    return data;
+
+} catch (error) {
+    console.error(
+        "Could not parse graph JSON:",
+        error,
+        jsonText
+    );
+
+    return null;
+}
+
+
+}
+
+/* ============================================
+REMOVE GRAPH SPECIFICATION
+============================================ */
+
+function removeGraphSpecification(text) {
+if (
+typeof text !== "string"
+) {
+return "";
+}
+
+
+return text
+    .replace(
+        /GRAPH_START[\s\S]*?GRAPH_END/g,
+        ""
+    )
+    .trim();
+
+
+}
+
+/* ============================================
+SHOW GRAPH
+============================================ */
+
+function showGraph(data) {
+if (
+!graphContainer ||
+!graphCanvas
+) {
+console.warn(
+"Graph elements are missing from HTML."
+);
+
+
+    return;
+}
+
+graphContainer.style.display =
+    "block";
+
+if (graphTitle) {
+    graphTitle.textContent =
+        data.title ||
+        "Generated Graph";
+}
+
+if (graphType) {
+    graphType.value =
+        data.type;
+}
+
+drawGraph(data);
+
+
+}
+
+/* ============================================
+DRAW GRAPH
+============================================ */
+
+function drawGraph(data) {
+if (!graphCanvas) {
+return;
+}
+
+
+if (
+    typeof Chart === "undefined"
+) {
+    console.error(
+        "Chart.js is not loaded."
+    );
+
+    return;
+}
+
+if (currentChart) {
+    currentChart.destroy();
+    currentChart = null;
+}
+
+const type =
+    data.type || "line";
+
+let chartData;
+let options;
+
+/*
+ * SCATTER
+ */
+
+if (type === "scatter") {
+    const points =
+        Array.isArray(data.points)
+            ? data.points
+            : [];
+
+    chartData = {
+        datasets: [
+            {
+                label:
+                    data.title ||
+                    "Data",
+                data: points,
+                borderWidth: 2
+            }
+        ]
+    };
+
+    options = {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        scales: {
+            x: {
+                type: "linear",
+                position: "bottom"
+            }
+        },
+
+        plugins: {
+            legend: {
+                display: true
+            }
+        }
+    };
+
+} else {
+
+    /*
+     * NORMAL CHARTS
+     */
+
+    const labels =
+        Array.isArray(data.labels)
+            ? data.labels
+            : [];
+
+    const values =
+        Array.isArray(data.values)
+            ? data.values
+            : [];
+
+    chartData = {
+        labels: labels,
+
+        datasets: [
+            {
+                label:
+                    data.title ||
+                    "Data",
+
+                data: values,
+
+                borderWidth: 2,
+
+                tension: 0.25
+            }
+        ]
+    };
+
+    /*
+     * PIE / DOUGHNUT
+     */
+
+    if (
+        type === "pie" ||
+        type === "doughnut"
+    ) {
+        chartData.datasets[0].backgroundColor =
+            generateChartColors(
+                values.length
+            );
+
+        chartData.datasets[0].borderWidth =
+            2;
+
+        options = {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "right"
+                }
+            }
+        };
+
+    } else {
+
+        /*
+         * LINE / BAR / RADAR
+         */
+
+        options = {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+
+            plugins: {
+                legend: {
+                    display:
+                        type === "radar"
+                }
+            }
+        };
+    }
+}
+
+try {
+    currentChart =
+        new Chart(
+            graphCanvas.getContext("2d"),
+            {
+                type: type,
+
+                data: chartData,
+
+                options: options
+            }
+        );
+
+} catch (error) {
+    console.error(
+        "Could not create graph:",
+        error
+    );
+}
+
+
+}
+
+/* ============================================
+GRAPH COLORS
+============================================ */
+
+function generateChartColors(count) {
+const colors = [];
+
+
+const colorList = [
+    "#3b82f6",
+    "#ef4444",
+    "#22c55e",
+    "#f59e0b",
+    "#a855f7",
+    "#06b6d4",
+    "#ec4899",
+    "#84cc16",
+    "#f97316",
+    "#6366f1"
+];
+
+for (
+    let i = 0;
+    i < count;
+    i++
+) {
+    colors.push(
+        colorList[
+            i % colorList.length
+        ]
+    );
+}
+
+return colors;
+
+
+}
+
+/* ============================================
+CHANGE GRAPH TYPE
+============================================ */
+
+function changeGraphType() {
+if (
+!currentGraphData ||
+!graphType
+) {
+return;
+}
+
+
+const newType =
+    graphType.value;
+
+const newData = {
+    ...currentGraphData,
+    type: newType
+};
+
+currentGraphData =
+    newData;
+
+drawGraph(newData);
+
+
+}
+
+/* ============================================
+HIDE GRAPH
+============================================ */
+
+function hideGraph() {
+if (graphContainer) {
+graphContainer.style.display =
+"none";
+}
+
+
+if (currentChart) {
+    currentChart.destroy();
+    currentChart = null;
+}
+
+currentGraphData = null;
+
+
+}
+
+/* ============================================
+TYPING INDICATOR
+============================================ */
 
 function showTypingIndicator() {
 if (!messagesContainer) {
@@ -774,9 +907,9 @@ scrollToBottom();
 
 }
 
-// ============================================
-// REMOVE TYPING INDICATOR
-// ============================================
+/* ============================================
+REMOVE TYPING INDICATOR
+============================================ */
 
 function removeTypingIndicator() {
 const typing =
@@ -792,9 +925,9 @@ if (typing) {
 
 }
 
-// ============================================
-// SCROLL
-// ============================================
+/* ============================================
+SCROLL
+============================================ */
 
 function scrollToBottom() {
 if (!messagesContainer) {
@@ -808,9 +941,9 @@ messagesContainer.scrollTop =
 
 }
 
-// ============================================
-// UPDATE CHAT TITLE
-// ============================================
+/* ============================================
+UPDATE CHAT TITLE
+============================================ */
 
 function updateChatTitle(
 chat,
@@ -852,20 +985,19 @@ if (
 
 }
 
-// ============================================
-// SEND MESSAGE
-// ============================================
+/* ============================================
+SEND MESSAGE
+============================================ */
 
 async function sendMessage() {
-
-
 if (isSending) {
-    return;
+return;
 }
+
 
 if (!messageInput) {
     console.error(
-        "Charlie's AI: Message input does not exist."
+        "Message input does not exist."
     );
 
     return;
@@ -899,10 +1031,6 @@ messageInput.value = "";
 messageInput.style.height =
     "auto";
 
-// ========================================
-// USER MESSAGE
-// ========================================
-
 chat.messages.push({
     role: "user",
     content: text
@@ -917,25 +1045,19 @@ saveChats();
 
 renderChatList();
 
-loadChat(
-    chat.id
-);
+loadChat(chat.id);
 
 showTypingIndicator();
 
 if (sendButton) {
-    sendButton.disabled = true;
+    sendButton.disabled =
+        true;
 
     sendButton.textContent =
         "Sending...";
 }
 
-// ========================================
-// API REQUEST
-// ========================================
-
 try {
-
     console.log(
         "Sending request to:",
         API_URL
@@ -974,7 +1096,6 @@ try {
             JSON.parse(
                 responseText
             );
-
     } catch {
         data = {
             error:
@@ -982,28 +1103,18 @@ try {
         };
     }
 
-    // ====================================
-    // ERROR
-    // ====================================
-
     if (!response.ok) {
-
         console.error(
-            "Charlie's AI backend error:",
+            "Backend error:",
             response.status,
             data
         );
 
-        let errorMessage =
-            "The AI service returned an error.";
-
-        if (
+        const errorMessage =
             data &&
             data.error
-        ) {
-            errorMessage =
-                data.error;
-        }
+                ? data.error
+                : "The AI service returned an error.";
 
         throw new Error(
             "Server returned " +
@@ -1013,42 +1124,32 @@ try {
         );
     }
 
-    // ====================================
-    // GET AI RESPONSE
-    // ====================================
-
     let aiMessage = "";
 
     if (
         typeof data === "string"
     ) {
-
-        aiMessage =
-            data;
+        aiMessage = data;
 
     } else if (
         data.reply
     ) {
-
         aiMessage =
             data.reply;
 
     } else if (
         data.message
     ) {
-
         if (
             typeof data.message ===
             "string"
         ) {
-
             aiMessage =
                 data.message;
 
         } else if (
             data.message.content
         ) {
-
             aiMessage =
                 data.message.content;
         }
@@ -1056,7 +1157,6 @@ try {
     } else if (
         data.content
     ) {
-
         aiMessage =
             data.content;
 
@@ -1064,7 +1164,6 @@ try {
         data.choices &&
         data.choices[0]
     ) {
-
         const choice =
             data.choices[0];
 
@@ -1072,31 +1171,24 @@ try {
             choice.message &&
             choice.message.content
         ) {
-
             aiMessage =
                 choice.message.content;
 
         } else if (
             choice.text
         ) {
-
             aiMessage =
                 choice.text;
         }
     }
 
-    // ====================================
-    // INVALID RESPONSE
-    // ====================================
-
     if (
         !aiMessage ||
         typeof aiMessage !==
-        "string"
+            "string"
     ) {
-
         console.error(
-            "Charlie's AI: Unknown backend response:",
+            "Unknown backend response:",
             data
         );
 
@@ -1104,10 +1196,6 @@ try {
             "The backend returned an unexpected response."
         );
     }
-
-    // ====================================
-    // SAVE AI RESPONSE
-    // ====================================
 
     chat.messages.push({
         role: "assistant",
@@ -1126,9 +1214,8 @@ try {
     renderChatList();
 
 } catch (error) {
-
     console.error(
-        "Charlie's AI connection error:",
+        "AI connection error:",
         error
     );
 
@@ -1141,11 +1228,9 @@ try {
     );
 
 } finally {
-
     isSending = false;
 
     if (sendButton) {
-
         sendButton.disabled =
             false;
 
@@ -1161,9 +1246,9 @@ try {
 
 }
 
-// ============================================
-// ENTER KEY
-// ============================================
+/* ============================================
+ENTER KEY
+============================================ */
 
 function handleKey(event) {
 if (
@@ -1179,9 +1264,9 @@ event.preventDefault();
 
 }
 
-// ============================================
-// AUTO RESIZE TEXTAREA
-// ============================================
+/* ============================================
+TEXTAREA RESIZE
+============================================ */
 
 function resizeTextarea() {
 if (!messageInput) {
@@ -1201,9 +1286,9 @@ messageInput.style.height =
 
 }
 
-// ============================================
-// SUGGESTION BUTTON
-// ============================================
+/* ============================================
+SUGGESTION
+============================================ */
 
 function suggest(text) {
 if (!messageInput) {
@@ -1221,9 +1306,9 @@ messageInput.focus();
 
 }
 
-// ============================================
-// CLEAR ALL CHATS
-// ============================================
+/* ============================================
+CLEAR ALL CHATS
+============================================ */
 
 function clearAllChats() {
 const confirmed =
@@ -1244,24 +1329,25 @@ chats = [];
 
 currentChatId = null;
 
+hideGraph();
+
 createNewChat();
 
 
 }
 
-// ============================================
-// EVENT LISTENERS
-// ============================================
+/* ============================================
+EVENT LISTENERS
+============================================ */
 
 function setupEvents() {
-
-
 if (sendButton) {
-    sendButton.addEventListener(
-        "click",
-        sendMessage
-    );
+sendButton.addEventListener(
+"click",
+sendMessage
+);
 }
+
 
 if (newChatButton) {
     newChatButton.addEventListener(
@@ -1270,8 +1356,14 @@ if (newChatButton) {
     );
 }
 
-if (messageInput) {
+if (clearChatsButton) {
+    clearChatsButton.addEventListener(
+        "click",
+        clearAllChats
+    );
+}
 
+if (messageInput) {
     messageInput.addEventListener(
         "keydown",
         handleKey
@@ -1283,12 +1375,26 @@ if (messageInput) {
     );
 }
 
+if (graphType) {
+    graphType.addEventListener(
+        "change",
+        changeGraphType
+    );
+}
+
+if (closeGraphButton) {
+    closeGraphButton.addEventListener(
+        "click",
+        hideGraph
+    );
+}
+
 
 }
 
-// ============================================
-// MAKE FUNCTIONS AVAILABLE TO HTML
-// ============================================
+/* ============================================
+GLOBAL FUNCTIONS
+============================================ */
 
 window.sendMessage =
 sendMessage;
@@ -1308,9 +1414,9 @@ deleteChat;
 window.clearAllChats =
 clearAllChats;
 
-// ============================================
-// INITIALIZE
-// ============================================
+/* ============================================
+INITIALIZE
+============================================ */
 
 function initialize() {
 checkElements();
@@ -1323,26 +1429,18 @@ loadSavedChats();
 
 }
 
-// ============================================
-// START
-// ============================================
+/* ============================================
+START
+============================================ */
 
 if (
 document.readyState ===
 "loading"
 ) {
-
-
 document.addEventListener(
-    "DOMContentLoaded",
-    initialize
+"DOMContentLoaded",
+initialize
 );
-
-
 } else {
-
-
 initialize();
-
-
 }
