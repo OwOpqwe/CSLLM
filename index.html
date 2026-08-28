@@ -4,8 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSLLM</title>
-    <link rel="stylesheet" href="style.css">
+
+```
+<title>Charlie's AI</title>
+
+<link rel="stylesheet" href="style.css">
+```
+
 </head>
 
 <body>
@@ -13,48 +18,81 @@
 <div class="app">
 
 ```
+<!-- SIDEBAR -->
 <aside class="sidebar">
 
     <div class="sidebar-header">
-        <h1>CSLLM</h1>
 
-        <button id="newChatButton" class="new-chat-button">
+        <h1>Charlie's AI</h1>
+
+        <button
+            id="newChatButton"
+            class="new-chat-button"
+            type="button"
+        >
             + New Chat
         </button>
+
     </div>
 
-    <div id="chatList" class="chat-list"></div>
+    <!-- CHAT HISTORY -->
+    <div
+        id="chatList"
+        class="chat-list"
+    ></div>
 
 </aside>
 
+
+<!-- MAIN CHAT -->
 <main class="chat-area">
 
+    <!-- HEADER -->
     <header class="chat-header">
-        <h2 id="chatTitle">New Chat</h2>
+
+        <h2 id="chatTitle">
+            New Chat
+        </h2>
+
     </header>
 
-    <div id="messages" class="messages">
+
+    <!-- MESSAGES -->
+    <div
+        id="messages"
+        class="messages"
+    >
 
         <div class="welcome">
-            <h2>Welcome to CSLLM</h2>
-            <p>How can I help you?</p>
+
+            <h2>
+                Welcome to Charlie's AI
+            </h2>
+
+            <p>
+                How can I help you?
+            </p>
+
         </div>
 
     </div>
 
+
+    <!-- INPUT -->
     <div class="input-container">
 
         <textarea
             id="messageInput"
-            placeholder="Message CSLLM..."
+            placeholder="Message Charlie's AI..."
             rows="1"
-            aria-label="Message"
+            aria-label="Message Charlie's AI"
         ></textarea>
 
         <button
             id="sendButton"
             class="send-button"
             type="button"
+            aria-label="Send message"
         >
             Send
         </button>
@@ -65,6 +103,8 @@
 ```
 
 </div>
+
+<!-- JAVASCRIPT -->
 
 <script src="script.js"></script>
 
