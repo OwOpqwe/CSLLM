@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +10,6 @@
 
 <link rel="stylesheet" href="style.css">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 
 </head>
 
@@ -21,6 +18,7 @@
 <div class="app">
 
 
+<!-- SIDEBAR -->
 <aside class="sidebar">
 
     <div class="sidebar-header">
@@ -37,25 +35,47 @@
 
     </div>
 
+    <!-- CHAT HISTORY -->
     <div
         id="chatList"
         class="chat-list"
     ></div>
 
+    <div class="sidebar-bottom">
+
+        <button
+            id="clearChatsButton"
+            class="clear-chats-button"
+            type="button"
+        >
+            Clear Chats
+        </button>
+
+    </div>
+
 </aside>
 
 
+<!-- MAIN CHAT -->
 <main class="chat-area">
 
+    <!-- HEADER -->
     <header class="chat-header">
 
-        <h2 id="chatTitle">
-            New Chat
-        </h2>
+        <div>
+            <h2 id="chatTitle">
+                New Chat
+            </h2>
+
+            <p class="ai-status">
+                Charlie's AI
+            </p>
+        </div>
 
     </header>
 
 
+    <!-- MESSAGES -->
     <div
         id="messages"
         class="messages"
@@ -68,31 +88,142 @@
             </h2>
 
             <p>
-                Ask me anything, or ask me to create a graph.
+                Ask me a question, analyze data, or create a graph.
             </p>
+
+
+            <!-- SUGGESTIONS -->
+            <div class="suggestions">
+
+                <button
+                    type="button"
+                    class="suggestion-button"
+                    onclick="suggest('Explain how photosynthesis works')"
+                >
+                    Explain something
+                </button>
+
+                <button
+                    type="button"
+                    class="suggestion-button"
+                    onclick="suggest('Create a graph showing the probability of death by age using this data: Age 0.5: 0.5%, Age 1: 0.2%, Age 2: 0.15%, Age 3: 0.12%, Age 4: 0.10%, Age 5: 0.08%, Age 10: 0.08%, Age 15: 0.07%, Age 20: 0.08%, Age 25: 0.10%, Age 30: 0.12%, Age 35: 0.15%, Age 40: 0.20%, Age 45: 0.25%, Age 50: 0.30%, Age 55: 0.40%, Age 60: 0.55%, Age 65: 0.70%, Age 70: 0.90%, Age 75: 1.20%, Age 80: 1.60%, Age 85: 2.20%, Age 90: 3.00%, Age 95: 4.50%, Age 100: 6.50%')"
+                >
+                    Create a graph
+                </button>
+
+                <button
+                    type="button"
+                    class="suggestion-button"
+                    onclick="suggest('Give me a table of useful statistics about a dataset')"
+                >
+                    Analyze data
+                </button>
+
+            </div>
 
         </div>
 
     </div>
 
 
-    <div class="input-container">
+    <!-- GRAPH AREA -->
+    <div
+        id="graphContainer"
+        class="graph-container"
+        style="display: none;"
+    >
 
-        <textarea
-            id="messageInput"
-            placeholder="Message Charlie's AI..."
-            rows="1"
-            aria-label="Message Charlie's AI"
-        ></textarea>
+        <div class="graph-header">
 
-        <button
-            id="sendButton"
-            class="send-button"
-            type="button"
-            aria-label="Send message"
-        >
-            Send
-        </button>
+            <h3 id="graphTitle">
+                Generated Graph
+            </h3>
+
+            <button
+                id="closeGraphButton"
+                type="button"
+                class="close-graph-button"
+                aria-label="Close graph"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="graph-controls">
+
+            <label for="graphType">
+                Graph type
+            </label>
+
+            <select id="graphType">
+
+                <option value="line">
+                    Line
+                </option>
+
+                <option value="bar">
+                    Bar
+                </option>
+
+                <option value="scatter">
+                    Scatter
+                </option>
+
+                <option value="pie">
+                    Pie
+                </option>
+
+                <option value="doughnut">
+                    Doughnut
+                </option>
+
+                <option value="radar">
+                    Radar
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="graph-wrapper">
+
+            <canvas
+                id="graphCanvas"
+                aria-label="Generated graph"
+            ></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- INPUT -->
+    <div class="input-area">
+
+        <div class="input-container">
+
+            <textarea
+                id="messageInput"
+                placeholder="Message Charlie's AI..."
+                rows="1"
+                aria-label="Message Charlie's AI"
+            ></textarea>
+
+            <button
+                id="sendButton"
+                class="send-button"
+                type="button"
+                aria-label="Send message"
+            >
+                Send
+            </button>
+
+        </div>
+
+        <p class="input-hint">
+            Press Enter to send · Shift + Enter for a new line
+        </p>
 
     </div>
 
@@ -100,6 +231,12 @@
 
 
 </div>
+
+<!-- CHART.JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- CHARLIE'S AI JAVASCRIPT -->
 
 <script src="script.js"></script>
 
