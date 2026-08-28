@@ -1,992 +1,324 @@
-````javascript
 "use strict";
 
 // ============================================================
-// CSLLM FRONTEND
+// CSLLM BACKEND
+// ============================================================
+//
+// File location:
+//
+//     /api/chat.js
+//
+// IMPORTANT:
+// Put your Groq API key in Vercel Environment Variables:
+//
+//     GROQ_API_KEY
+//
+// DO NOT put the API key in script.js.
 // ============================================================
 
-const API_URL = "https://csllm.vercel.app/api/chat";
+const GROQ_API_URL =
+    "https://api.groq.com/openai/v1/chat/completions";
 
-const STORAGE_KEY = "csllm_chats";
-const CURRENT_CHAT_KEY = "csllm_current_chat";
-
-let chats = [];
-let currentChatId = null;
-let isSending = false;
-
-
-// ============================================================
-// CHAT CREATION
-// ============================================================
-
-function createChat() {
-    return {
-        id:
-            "chat-" +
-            Date.now() +
-            "-" +
-            Math.random().toString(36).substring(2, 9),
-
-        title: "New Chat",
-
-        messages: [],
-
-        createdAt: Date.now(),
-
-        updatedAt: Date.now()
-    };
-}
+// Use the Vercel environment variable GROQ_MODEL.
+// If you don't create it, this is the default.
+//
+// IMPORTANT:
+// You previously received "model_not_found" for
+// llama-3.3-70b-versatile.
+// If that happens again, change GROQ_MODEL in Vercel.
+const MODEL =
+    process.env.GROQ_MODEL ||
+    "llama-3.3-70b-versatile";
 
 
 // ============================================================
-// LOAD CHATS
+// CORS
 // ============================================================
 
-function loadChats() {
-    try {
-        const saved =
-            localStorage.getItem(STORAGE_KEY);
+function setCorsHeaders(res) {
 
-        if (saved) {
-            chats = JSON.parse(saved);
-        } else {
-            chats = [];
-        }
+    res.setHeader(
+        "Access-Control-Allow-Origin",
+        "https://owopqwe.github.io"
+    );
 
-    } catch (error) {
-        console.error(
-            "Could not load chats:",
-            error
-        );
+    res.setHeader(
+        "Access-Control-Allow-Methods",
+        "POST, OPTIONS"
+    );
 
-        chats = [];
-    }
-
-    if (!Array.isArray(chats)) {
-        chats = [];
-    }
-}
-
-
-// ============================================================
-// SAVE CHATS
-// ============================================================
-
-function saveChats() {
-    try {
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(chats)
-        );
-
-        if (currentChatId) {
-            localStorage.setItem(
-                CURRENT_CHAT_KEY,
-                currentChatId
-            );
-        }
-
-    } catch (error) {
-        console.error(
-            "Could not save chats:",
-            error
-        );
-    }
-}
-
-
-// ============================================================
-// GET CURRENT CHAT
-// ============================================================
-
-function getCurrentChat() {
-    return chats.find(
-        chat => chat.id === currentChatId
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type"
     );
 }
 
 
 // ============================================================
-// CREATE NEW CHAT
+// MAIN API FUNCTION
 // ============================================================
 
-function newChat() {
+module.exports = async function handler(req, res) {
 
-    const chat = createChat();
+    // --------------------------------------------------------
+    // CORS
+    // --------------------------------------------------------
 
-    chats.unshift(chat);
-
-    currentChatId = chat.id;
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-
-    const input =
-        document.getElementById(
-            "message-input"
-        );
-
-    if (input) {
-        input.focus();
-    }
-}
+    setCorsHeaders(res);
 
 
-// Keep old function name working
-function createNewChat() {
-    newChat();
-}
+    // --------------------------------------------------------
+    // OPTIONS / PREFLIGHT
+    // --------------------------------------------------------
 
+    if (req.method === "OPTIONS") {
 
-// ============================================================
-// SWITCH CHAT
-// ============================================================
+        return res.status(204).end();
 
-function switchChat(id) {
-
-    const chat =
-        chats.find(
-            chat => chat.id === id
-        );
-
-    if (!chat) {
-        return;
-    }
-
-    currentChatId = id;
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-}
-
-
-// ============================================================
-// DELETE CHAT
-// ============================================================
-
-function deleteChat(id) {
-
-    const chat =
-        chats.find(
-            chat => chat.id === id
-        );
-
-    if (!chat) {
-        return;
-    }
-
-    if (
-        !confirm(
-            `Delete "${chat.title}"?`
-        )
-    ) {
-        return;
-    }
-
-    chats =
-        chats.filter(
-            chat => chat.id !== id
-        );
-
-
-    if (chats.length === 0) {
-
-        const newChatObject =
-            createChat();
-
-        chats.push(
-            newChatObject
-        );
-
-        currentChatId =
-            newChatObject.id;
-
-    } else if (
-        currentChatId === id
-    ) {
-
-        chats.sort(
-            (a, b) =>
-                b.updatedAt -
-                a.updatedAt
-        );
-
-        currentChatId =
-            chats[0].id;
     }
 
 
-    saveChats();
+    // --------------------------------------------------------
+    // ONLY POST
+    // --------------------------------------------------------
 
-    renderChatList();
+    if (req.method !== "POST") {
 
-    renderCurrentChat();
-}
+        return res.status(405).json({
+            error: "Method not allowed."
+        });
 
-
-// ============================================================
-// RENAME CHAT
-// ============================================================
-
-function renameChat(id) {
-
-    const chat =
-        chats.find(
-            chat => chat.id === id
-        );
-
-    if (!chat) {
-        return;
     }
 
-    const name =
-        prompt(
-            "Enter a new chat name:",
-            chat.title
-        );
 
-    if (name === null) {
-        return;
-    }
+    // --------------------------------------------------------
+    // API KEY CHECK
+    // --------------------------------------------------------
 
-    const cleaned =
-        name.trim();
-
-    if (!cleaned) {
-        return;
-    }
-
-    chat.title =
-        cleaned;
-
-    chat.updatedAt =
-        Date.now();
-
-    saveChats();
-
-    renderChatList();
-}
+    const apiKey =
+        process.env.GROQ_API_KEY;
 
 
-// ============================================================
-// CHAT OPTIONS
-// ============================================================
-
-function showChatMenu(id) {
-
-    const choice =
-        prompt(
-            "Type:\nrename - Rename chat\ndelete - Delete chat"
-        );
-
-    if (!choice) {
-        return;
-    }
-
-    const command =
-        choice
-            .trim()
-            .toLowerCase();
-
-    if (command === "rename") {
-        renameChat(id);
-    }
-
-    if (command === "delete") {
-        deleteChat(id);
-    }
-}
-
-
-// ============================================================
-// RENDER CHAT LIST
-// ============================================================
-
-function renderChatList() {
-
-    const list =
-        document.getElementById(
-            "chat-list"
-        );
-
-    if (!list) {
-        console.warn(
-            "#chat-list was not found."
-        );
-
-        return;
-    }
-
-    list.innerHTML = "";
-
-
-    const sortedChats =
-        [...chats].sort(
-            (a, b) =>
-                b.updatedAt -
-                a.updatedAt
-        );
-
-
-    sortedChats.forEach(
-        chat => {
-
-            const row =
-                document.createElement(
-                    "div"
-                );
-
-            row.className =
-                "chat-list-row";
-
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-            button.className =
-                "chat-list-item";
-
-
-            if (
-                chat.id ===
-                currentChatId
-            ) {
-
-                button.classList.add(
-                    "active"
-                );
-            }
-
-
-            button.textContent =
-                chat.title ||
-                "New Chat";
-
-
-            button.onclick =
-                () => {
-
-                    switchChat(
-                        chat.id
-                    );
-
-                };
-
-
-            const menu =
-                document.createElement(
-                    "button"
-                );
-
-            menu.className =
-                "chat-menu-button";
-
-            menu.textContent =
-                "⋯";
-
-            menu.title =
-                "Chat options";
-
-
-            menu.onclick =
-                event => {
-
-                    event.stopPropagation();
-
-                    showChatMenu(
-                        chat.id
-                    );
-
-                };
-
-
-            row.appendChild(
-                button
-            );
-
-            row.appendChild(
-                menu
-            );
-
-            list.appendChild(
-                row
-            );
-        }
-    );
-}
-
-
-// ============================================================
-// RENDER CURRENT CHAT
-// ============================================================
-
-function renderCurrentChat() {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-    if (!container) {
+    if (!apiKey) {
 
         console.error(
-            "CSLLM ERROR: #messages does not exist."
+            "GROQ_API_KEY is missing."
         );
 
-        return;
+        return res.status(500).json({
+            error:
+                "The AI backend is not configured. GROQ_API_KEY is missing from Vercel."
+        });
+
     }
 
 
-    container.innerHTML = "";
-
-
-    const chat =
-        getCurrentChat();
-
-
-    if (!chat) {
-        return;
-    }
-
-
-    if (
-        !chat.messages ||
-        chat.messages.length === 0
-    ) {
-
-        showWelcome();
-
-        return;
-    }
-
-
-    chat.messages.forEach(
-        message => {
-
-            addMessageToScreen(
-                message.role,
-                message.content,
-                false
-            );
-
-        }
-    );
-
-
-    scrollToBottom();
-}
-
-
-// ============================================================
-// WELCOME
-// ============================================================
-
-function showWelcome() {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-    if (!container) {
-        return;
-    }
-
-
-    const welcome =
-        document.createElement(
-            "div"
-        );
-
-    welcome.className =
-        "empty-chat";
-
-
-    const title =
-        document.createElement(
-            "h1"
-        );
-
-    title.textContent =
-        "CSLLM";
-
-
-    const subtitle =
-        document.createElement(
-            "p"
-        );
-
-    subtitle.textContent =
-        "How can I help you today?";
-
-
-    welcome.appendChild(
-        title
-    );
-
-    welcome.appendChild(
-        subtitle
-    );
-
-    container.appendChild(
-        welcome
-    );
-}
-
-
-// ============================================================
-// DISPLAY MESSAGE
-// ============================================================
-
-function addMessageToScreen(
-    role,
-    content,
-    scroll = true
-) {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-    if (!container) {
-        return;
-    }
-
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-
-    message.className =
-        role === "user"
-            ? "message user-message"
-            : "message ai-message";
-
-
-    const messageContent =
-        document.createElement(
-            "div"
-        );
-
-
-    messageContent.className =
-        "message-content";
-
-
-    messageContent.innerHTML =
-        formatMessage(
-            String(content || "")
-        );
-
-
-    message.appendChild(
-        messageContent
-    );
-
-
-    container.appendChild(
-        message
-    );
-
-
-    if (scroll) {
-        scrollToBottom();
-    }
-}
-
-
-// ============================================================
-// BASIC MARKDOWN FORMAT
-// ============================================================
-
-function formatMessage(text) {
-
-    let result =
-        text
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            );
-
-
-    result =
-        result.replace(
-            /```([\s\S]*?)```/g,
-            "<pre><code>$1</code></pre>"
-        );
-
-
-    result =
-        result.replace(
-            /\*\*(.*?)\*\*/g,
-            "<strong>$1</strong>"
-        );
-
-
-    result =
-        result.replace(
-            /\*(.*?)\*/g,
-            "<em>$1</em>"
-        );
-
-
-    result =
-        result.replace(
-            /\n/g,
-            "<br>"
-        );
-
-
-    return result;
-}
-
-
-// ============================================================
-// SCROLL
-// ============================================================
-
-function scrollToBottom() {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-    if (!container) {
-        return;
-    }
-
-    container.scrollTop =
-        container.scrollHeight;
-}
-
-
-// ============================================================
-// CREATE CHAT TITLE
-// ============================================================
-
-function createChatTitle(text) {
-
-    let title =
-        text
-            .replace(
-                /\s+/g,
-                " "
-            )
-            .trim();
-
-
-    if (
-        title.length > 35
-    ) {
-
-        title =
-            title.substring(
-                0,
-                35
-            ) + "...";
-    }
-
-
-    return (
-        title ||
-        "New Chat"
-    );
-}
-
-
-// ============================================================
-// ADD MESSAGE TO CHAT
-// ============================================================
-
-function addMessageToChat(
-    role,
-    content
-) {
-
-    const chat =
-        getCurrentChat();
-
-    if (!chat) {
-        return;
-    }
-
-
-    chat.messages.push({
-
-        role:
-            role,
-
-        content:
-            content,
-
-        timestamp:
-            Date.now()
-
-    });
-
-
-    chat.updatedAt =
-        Date.now();
-
-
-    if (
-        role === "user" &&
-        chat.title ===
-            "New Chat"
-    ) {
-
-        chat.title =
-            createChatTitle(
-                content
-            );
-    }
-
-
-    saveChats();
-
-    renderChatList();
-}
-
-
-// ============================================================
-// LOADING INDICATOR
-// ============================================================
-
-function showLoading() {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-    if (!container) {
-        return null;
-    }
-
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-    message.className =
-        "message ai-message";
-
-
-    const content =
-        document.createElement(
-            "div"
-        );
-
-    content.className =
-        "message-content";
-
-    content.textContent =
-        "Thinking...";
-
-
-    message.appendChild(
-        content
-    );
-
-    container.appendChild(
-        message
-    );
-
-
-    scrollToBottom();
-
-
-    return message;
-}
-
-
-function removeLoading(element) {
-
-    if (
-        element &&
-        element.parentNode
-    ) {
-
-        element.remove();
-
-    }
-}
-
-
-// ============================================================
-// SEND MESSAGE
-// ============================================================
-
-async function sendMessage(
-    suppliedText = null
-) {
-
-    if (isSending) {
-        return;
-    }
-
-
-    const input =
-        document.getElementById(
-            "message-input"
-        );
-
-
-    let text;
-
-
-    if (
-        suppliedText !== null
-    ) {
-
-        text =
-            suppliedText.trim();
-
-    } else if (input) {
-
-        text =
-            input.value.trim();
-
-    } else {
-
-        console.error(
-            "#message-input was not found."
-        );
-
-        return;
-    }
-
-
-    if (!text) {
-        return;
-    }
-
-
-    let chat =
-        getCurrentChat();
-
-
-    if (!chat) {
-
-        newChat();
-
-        chat =
-            getCurrentChat();
-    }
-
-
-    // Add user message
-
-    addMessageToChat(
-        "user",
-        text
-    );
-
-
-    addMessageToScreen(
-        "user",
-        text
-    );
-
-
-    if (input) {
-
-        input.value =
-            "";
-
-        input.style.height =
-            "auto";
-    }
-
-
-    const loading =
-        showLoading();
-
-
-    isSending =
-        true;
-
-
-    setSendButton(
-        true
-    );
-
+    // --------------------------------------------------------
+    // READ REQUEST
+    // --------------------------------------------------------
 
     try {
 
-        // Send the entire conversation.
-        // This gives the AI memory inside
-        // the current chat.
+        const body =
+            req.body || {};
 
-        const messages =
-            chat.messages.map(
-                message => ({
-                    role:
-                        message.role,
-                    content:
-                        message.content
-                })
-            );
 
+        let messages =
+            body.messages;
+
+
+        // ----------------------------------------------------
+        // VALIDATE MESSAGES
+        // ----------------------------------------------------
+
+        if (!Array.isArray(messages)) {
+
+            return res.status(400).json({
+                error:
+                    "Invalid request. 'messages' must be an array."
+            });
+
+        }
+
+
+        // ----------------------------------------------------
+        // CLEAN MESSAGES
+        // ----------------------------------------------------
+
+        messages =
+            messages
+                .filter(
+                    message =>
+                        message &&
+                        typeof message === "object" &&
+                        typeof message.role === "string" &&
+                        typeof message.content === "string"
+                )
+                .map(
+                    message => {
+
+                        let role =
+                            message.role;
+
+
+                        // Only allow roles supported by
+                        // the chat completion API.
+
+                        if (
+                            role !== "user" &&
+                            role !== "assistant" &&
+                            role !== "system"
+                        ) {
+
+                            role =
+                                "user";
+
+                        }
+
+
+                        return {
+
+                            role:
+                                role,
+
+                            content:
+                                message.content.trim()
+
+                        };
+
+                    }
+                )
+                .filter(
+                    message =>
+                        message.content.length > 0
+                );
+
+
+        // ----------------------------------------------------
+        // LIMIT HISTORY
+        // ----------------------------------------------------
+        //
+        // Prevent enormous requests if someone has a huge chat.
+        //
+        // Keep the most recent 40 messages.
+        //
+
+        if (
+            messages.length > 40
+        ) {
+
+            messages =
+                messages.slice(
+                    -40
+                );
+
+        }
+
+
+        if (
+            messages.length === 0
+        ) {
+
+            return res.status(400).json({
+                error:
+                    "No messages were provided."
+            });
+
+        }
+
+
+        // ----------------------------------------------------
+        // SYSTEM PROMPT
+        // ----------------------------------------------------
+
+        const systemMessage = {
+
+            role:
+                "system",
+
+            content:
+                "You are CSLLM, a helpful AI assistant. " +
+                "Answer clearly and naturally. " +
+                "Remember the conversation provided in the messages. " +
+                "If the user tells you their name, remember it " +
+                "and use it when appropriate."
+
+        };
+
+
+        const finalMessages = [
+
+            systemMessage,
+
+            ...messages
+
+        ];
+
+
+        // ----------------------------------------------------
+        // SEND TO GROQ
+        // ----------------------------------------------------
 
         console.log(
-            "Sending request to:",
-            API_URL
+            "Sending request to Groq."
+        );
+
+        console.log(
+            "Model:",
+            MODEL
+        );
+
+        console.log(
+            "Message count:",
+            finalMessages.length
         );
 
 
-        const response =
+        const groqResponse =
             await fetch(
-                API_URL,
+                GROQ_API_URL,
                 {
 
                     method:
                         "POST",
 
                     headers: {
+
                         "Content-Type":
-                            "application/json"
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${apiKey}`
+
                     },
 
                     body:
                         JSON.stringify({
+
+                            model:
+                                MODEL,
+
                             messages:
-                                messages
+                                finalMessages,
+
+                            temperature:
+                                0.7,
+
+                            max_tokens:
+                                2048
+
                         })
 
                 }
             );
 
 
-        console.log(
-            "Backend status:",
-            response.status
-        );
+        // ----------------------------------------------------
+        // READ GROQ RESPONSE
+        // ----------------------------------------------------
 
-
-        const raw =
-            await response.text();
+        const responseText =
+            await groqResponse.text();
 
 
         let data;
@@ -996,531 +328,151 @@ async function sendMessage(
 
             data =
                 JSON.parse(
-                    raw
+                    responseText
                 );
 
         } catch {
 
-            data = {
-                error:
-                    raw
-            };
+            data = null;
+
         }
 
 
-        if (!response.ok) {
+        // ----------------------------------------------------
+        // GROQ ERROR
+        // ----------------------------------------------------
+
+        if (
+            !groqResponse.ok
+        ) {
 
             console.error(
-                "Backend error:",
-                response.status,
+                "Groq API error:",
+                groqResponse.status,
+                responseText
+            );
+
+
+            let errorMessage =
+                "The AI provider returned an error.";
+
+
+            if (
+                data &&
+                data.error
+            ) {
+
+                if (
+                    typeof data.error ===
+                    "string"
+                ) {
+
+                    errorMessage =
+                        data.error;
+
+                } else if (
+                    data.error.message
+                ) {
+
+                    errorMessage =
+                        data.error.message;
+
+                }
+
+            }
+
+
+            return res.status(
+                groqResponse.status
+            ).json({
+
+                error:
+                    errorMessage,
+
+                provider_status:
+                    groqResponse.status
+
+            });
+
+        }
+
+
+        // ----------------------------------------------------
+        // EXTRACT AI RESPONSE
+        // ----------------------------------------------------
+
+        if (
+            !data ||
+            !data.choices ||
+            !data.choices[0] ||
+            !data.choices[0].message
+        ) {
+
+            console.error(
+                "Unexpected Groq response:",
                 data
             );
 
 
-            throw new Error(
-                data.error ||
-                `Server returned ${response.status}`
-            );
+            return res.status(500).json({
+                error:
+                    "The AI returned an unexpected response."
+            });
+
         }
 
 
         const reply =
-            extractReply(
-                data
-            );
+            data
+                .choices[0]
+                .message
+                .content;
 
 
-        if (!reply) {
+        if (
+            typeof reply !== "string" ||
+            !reply.trim()
+        ) {
 
-            console.error(
-                "Unexpected backend response:",
-                data
-            );
+            return res.status(500).json({
+                error:
+                    "The AI returned an empty response."
+            });
 
-
-            throw new Error(
-                "The backend returned no AI response."
-            );
         }
 
 
-        removeLoading(
-            loading
-        );
+        // ----------------------------------------------------
+        // SUCCESS
+        // ----------------------------------------------------
 
+        return res.status(200).json({
 
-        addMessageToChat(
-            "assistant",
-            reply
-        );
+            reply:
+                reply.trim()
 
-
-        addMessageToScreen(
-            "assistant",
-            reply
-        );
+        });
 
 
     } catch (error) {
 
+        // ----------------------------------------------------
+        // SERVER ERROR
+        // ----------------------------------------------------
+
         console.error(
-            "AI connection error:",
+            "CSLLM backend error:",
             error
         );
 
 
-        removeLoading(
-            loading
-        );
+        return res.status(500).json({
 
+            error:
+                "The AI backend encountered an unexpected error."
 
-        addMessageToScreen(
-            "assistant",
-            "Sorry, I couldn't connect to the AI.\n\n" +
-            error.message
-        );
+        });
 
-    } finally {
-
-        isSending =
-            false;
-
-        setSendButton(
-            false
-        );
-
-        if (input) {
-            input.focus();
-        }
-    }
-}
-
-
-// ============================================================
-// EXTRACT AI RESPONSE
-// ============================================================
-
-function extractReply(data) {
-
-    if (!data) {
-        return null;
     }
 
-
-    if (
-        typeof data.reply ===
-        "string"
-    ) {
-
-        return data.reply;
-    }
-
-
-    if (
-        typeof data.response ===
-        "string"
-    ) {
-
-        return data.response;
-    }
-
-
-    if (
-        typeof data.content ===
-        "string"
-    ) {
-
-        return data.content;
-    }
-
-
-    if (
-        typeof data.message ===
-        "string"
-    ) {
-
-        return data.message;
-    }
-
-
-    if (
-        data.message &&
-        typeof data.message.content ===
-            "string"
-    ) {
-
-        return data.message.content;
-    }
-
-
-    if (
-        data.choices &&
-        data.choices[0]
-    ) {
-
-        const choice =
-            data.choices[0];
-
-
-        if (
-            choice.message &&
-            typeof choice.message.content ===
-                "string"
-        ) {
-
-            return choice.message.content;
-        }
-
-
-        if (
-            typeof choice.text ===
-                "string"
-        ) {
-
-            return choice.text;
-        }
-    }
-
-
-    return null;
-}
-
-
-// ============================================================
-// SEND BUTTON
-// ============================================================
-
-function setSendButton(
-    loading
-) {
-
-    const button =
-        document.getElementById(
-            "send-button"
-        );
-
-    if (!button) {
-        return;
-    }
-
-
-    button.disabled =
-        loading;
-
-
-    if (loading) {
-
-        button.dataset.oldText =
-            button.textContent;
-
-        button.textContent =
-            "Thinking...";
-
-    } else {
-
-        button.textContent =
-            button.dataset.oldText ||
-            "Send";
-    }
-}
-
-
-// ============================================================
-// HANDLE SEND
-// ============================================================
-
-async function handleSend() {
-
-    const input =
-        document.getElementById(
-            "message-input"
-        );
-
-    if (!input) {
-        return;
-    }
-
-
-    await sendMessage(
-        input.value
-    );
-}
-
-
-// ============================================================
-// ENTER KEY
-// ============================================================
-
-function handleKey(event) {
-
-    if (
-        event.key === "Enter" &&
-        !event.shiftKey
-    ) {
-
-        event.preventDefault();
-
-        handleSend();
-    }
-}
-
-
-// ============================================================
-// SUGGESTION BUTTONS
-// ============================================================
-
-function suggest(text) {
-
-    sendMessage(
-        text
-    );
-}
-
-
-// ============================================================
-// CLEAR ALL
-// ============================================================
-
-function clearAllChats() {
-
-    if (
-        !confirm(
-            "Delete all chats?"
-        )
-    ) {
-        return;
-    }
-
-
-    chats = [];
-
-
-    const chat =
-        createChat();
-
-
-    chats.push(
-        chat
-    );
-
-
-    currentChatId =
-        chat.id;
-
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-}
-
-
-// ============================================================
-// EXPORT CHAT
-// ============================================================
-
-function exportCurrentChat() {
-
-    const chat =
-        getCurrentChat();
-
-    if (!chat) {
-        return;
-    }
-
-
-    let output =
-        `CSLLM - ${chat.title}\n\n`;
-
-
-    chat.messages.forEach(
-        message => {
-
-            output +=
-                `${
-                    message.role === "user"
-                        ? "You"
-                        : "CSLLM"
-                }:\n`;
-
-            output +=
-                message.content +
-                "\n\n";
-        }
-    );
-
-
-    const blob =
-        new Blob(
-            [output],
-            {
-                type:
-                    "text/plain"
-            }
-        );
-
-
-    const url =
-        URL.createObjectURL(
-            blob
-        );
-
-
-    const link =
-        document.createElement(
-            "a"
-        );
-
-
-    link.href =
-        url;
-
-    link.download =
-        `${chat.title || "chat"}.txt`;
-
-
-    link.click();
-
-
-    URL.revokeObjectURL(
-        url
-    );
-}
-
-
-// ============================================================
-// INITIALIZE
-// ============================================================
-
-function initialize() {
-
-    console.log(
-        "CSLLM initializing..."
-    );
-
-
-    loadChats();
-
-
-    const saved =
-        localStorage.getItem(
-            CURRENT_CHAT_KEY
-        );
-
-
-    if (
-        saved &&
-        chats.some(
-            chat => chat.id === saved
-        )
-    ) {
-
-        currentChatId =
-            saved;
-
-    } else if (
-        chats.length > 0
-    ) {
-
-        chats.sort(
-            (a, b) =>
-                b.updatedAt -
-                a.updatedAt
-        );
-
-        currentChatId =
-            chats[0].id;
-
-    } else {
-
-        const chat =
-            createChat();
-
-        chats.push(
-            chat
-        );
-
-        currentChatId =
-            chat.id;
-    }
-
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-
-
-    const input =
-        document.getElementById(
-            "message-input"
-        );
-
-
-    if (input) {
-
-        input.addEventListener(
-            "keydown",
-            handleKey
-        );
-
-
-        input.addEventListener(
-            "input",
-            () => {
-
-                input.style.height =
-                    "auto";
-
-                input.style.height =
-                    Math.min(
-                        input.scrollHeight,
-                        180
-                    ) + "px";
-            }
-        );
-    }
-
-
-    const button =
-        document.getElementById(
-            "send-button"
-        );
-
-
-    if (button) {
-
-        button.addEventListener(
-            "click",
-            handleSend
-        );
-    }
-
-
-    console.log(
-        "CSLLM ready."
-    );
-}
-
-
-// ============================================================
-// START
-// ============================================================
-
-if (
-    document.readyState ===
-    "loading"
-) {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        initialize
-    );
-
-} else {
-
-    initialize();
-}
-````
+};
