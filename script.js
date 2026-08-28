@@ -34,7 +34,7 @@ DOM
 
 function checkElements() {
 
-```
+
 messagesContainer =
     document.getElementById("messages");
 
@@ -74,7 +74,7 @@ if (!sendButton) {
 if (!chatList) {
     console.error("Charlie's AI: Missing #chatList");
 }
-```
+
 
 }
 
@@ -84,7 +84,7 @@ CREATE CHAT
 
 function createNewChat() {
 
-```
+
 const chat = {
     id: Date.now().toString(),
     title: "New Chat",
@@ -105,7 +105,7 @@ if (messageInput) {
     messageInput.value = "";
     messageInput.focus();
 }
-```
+
 
 }
 
@@ -115,7 +115,7 @@ DELETE CHAT
 
 function deleteChat(chatId, event) {
 
-```
+
 if (event) {
     event.stopPropagation();
 }
@@ -137,7 +137,7 @@ if (currentChatId === chatId) {
 saveChats();
 
 renderChatList();
-```
+
 
 }
 
@@ -147,7 +147,7 @@ STORAGE
 
 function saveChats() {
 
-```
+
 try {
 
     localStorage.setItem(
@@ -163,13 +163,13 @@ try {
     );
 
 }
-```
+
 
 }
 
 function loadSavedChats() {
 
-```
+
 try {
 
     const saved =
@@ -206,7 +206,7 @@ currentChatId = chats[0].id;
 renderChatList();
 
 loadChat(currentChatId);
-```
+
 
 }
 
@@ -216,11 +216,11 @@ CURRENT CHAT
 
 function getCurrentChat() {
 
-```
+
 return chats.find(
     chat => chat.id === currentChatId
 );
-```
+
 
 }
 
@@ -230,7 +230,7 @@ CHAT LIST
 
 function renderChatList() {
 
-```
+
 if (!chatList) {
     return;
 }
@@ -310,7 +310,7 @@ chats.forEach(chat => {
     chatList.appendChild(chatItem);
 
 });
-```
+
 
 }
 
@@ -320,7 +320,7 @@ LOAD CHAT
 
 function loadChat(chatId) {
 
-```
+
 const chat =
     chats.find(
         item => item.id === chatId
@@ -389,7 +389,7 @@ chat.messages.forEach(
 );
 
 scrollToBottom();
-```
+
 
 }
 
@@ -399,7 +399,7 @@ WELCOME
 
 function showWelcome() {
 
-```
+
 if (!messagesContainer) {
     return;
 }
@@ -429,7 +429,7 @@ welcome.appendChild(heading);
 welcome.appendChild(paragraph);
 
 messagesContainer.appendChild(welcome);
-```
+
 
 }
 
@@ -443,7 +443,7 @@ content,
 scroll = true
 ) {
 
-```
+
 if (!messagesContainer) {
     return;
 }
@@ -488,7 +488,7 @@ messagesContainer.appendChild(message);
 if (scroll) {
     scrollToBottom();
 }
-```
+
 
 }
 
@@ -501,7 +501,7 @@ graph,
 scroll = true
 ) {
 
-```
+
 if (
     !messagesContainer ||
     !graph
@@ -651,7 +651,7 @@ activeCharts.push(chart);
 if (scroll) {
     scrollToBottom();
 }
-```
+
 
 }
 
@@ -661,7 +661,7 @@ TYPING
 
 function showTypingIndicator() {
 
-```
+
 removeTypingIndicator();
 
 const typing =
@@ -689,13 +689,13 @@ typing.appendChild(bubble);
 messagesContainer.appendChild(typing);
 
 scrollToBottom();
-```
+
 
 }
 
 function removeTypingIndicator() {
 
-```
+
 const typing =
     document.getElementById(
         "typingIndicator"
@@ -704,7 +704,7 @@ const typing =
 if (typing) {
     typing.remove();
 }
-```
+
 
 }
 
@@ -714,14 +714,14 @@ SCROLL
 
 function scrollToBottom() {
 
-```
+
 if (!messagesContainer) {
     return;
 }
 
 messagesContainer.scrollTop =
     messagesContainer.scrollHeight;
-```
+
 
 }
 
@@ -734,7 +734,7 @@ chat,
 firstMessage
 ) {
 
-```
+
 if (!chat) {
     return;
 }
@@ -771,7 +771,7 @@ if (
         title || "New Chat";
 
 }
-```
+
 
 }
 
@@ -781,7 +781,7 @@ SEND
 
 async function sendMessage() {
 
-```
+
 if (isSending) {
     return;
 }
@@ -1015,7 +1015,7 @@ try {
     }
 
 }
-```
+
 
 }
 
@@ -1025,7 +1025,7 @@ ENTER
 
 function handleKey(event) {
 
-```
+
 if (
     event.key === "Enter" &&
     !event.shiftKey
@@ -1036,7 +1036,7 @@ if (
     sendMessage();
 
 }
-```
+
 
 }
 
@@ -1046,7 +1046,7 @@ RESIZE
 
 function resizeTextarea() {
 
-```
+
 if (!messageInput) {
     return;
 }
@@ -1060,7 +1060,7 @@ messageInput.style.height =
         200
     ) +
     "px";
-```
+
 
 }
 
@@ -1070,7 +1070,7 @@ CLEAR
 
 function clearAllChats() {
 
-```
+
 if (
     !confirm(
         "Delete all chats?"
@@ -1088,7 +1088,7 @@ chats = [];
 currentChatId = null;
 
 createNewChat();
-```
+
 
 }
 
@@ -1098,7 +1098,7 @@ EVENTS
 
 function setupEvents() {
 
-```
+
 if (sendButton) {
 
     sendButton.addEventListener(
@@ -1133,7 +1133,7 @@ if (messageInput) {
     );
 
 }
-```
+
 
 }
 
@@ -1162,13 +1162,13 @@ INITIALIZE
 
 function initialize() {
 
-```
+
 checkElements();
 
 setupEvents();
 
 loadSavedChats();
-```
+
 
 }
 
@@ -1177,17 +1177,17 @@ document.readyState ===
 "loading"
 ) {
 
-```
+
 document.addEventListener(
     "DOMContentLoaded",
     initialize
 );
-```
+
 
 } else {
 
-```
+
 initialize();
-```
+
 
 }
