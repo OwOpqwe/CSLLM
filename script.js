@@ -35,7 +35,7 @@ newChatButton = document.getElementById("newChatButton");
 chatList = document.getElementById("chatList");
 chatTitle = document.getElementById("chatTitle");
 
-```
+
 if (!messagesContainer) {
     console.error('CSLLM: Missing #messages');
 }
@@ -51,7 +51,7 @@ if (!sendButton) {
 if (!chatList) {
     console.warn('CSLLM: Missing #chatList');
 }
-```
+
 
 }
 
@@ -66,7 +66,7 @@ title: "New Chat",
 messages: []
 };
 
-```
+
 chats.unshift(chat);
 currentChatId = chat.id;
 
@@ -78,7 +78,7 @@ if (messageInput) {
     messageInput.value = "";
     messageInput.focus();
 }
-```
+
 
 }
 
@@ -91,7 +91,7 @@ if (event) {
 event.stopPropagation();
 }
 
-```
+
 chats = chats.filter(chat => chat.id !== chatId);
 
 if (chats.length === 0) {
@@ -106,7 +106,7 @@ if (currentChatId === chatId) {
 
 saveChats();
 renderChatList();
-```
+
 
 }
 
@@ -133,7 +133,7 @@ function loadSavedChats() {
 try {
 const saved = localStorage.getItem("csllm_chats");
 
-```
+
     if (saved) {
         chats = JSON.parse(saved);
     }
@@ -155,7 +155,7 @@ currentChatId = chats[0].id;
 
 renderChatList();
 loadChat(currentChatId);
-```
+
 
 }
 
@@ -178,7 +178,7 @@ if (!chatList) {
 return;
 }
 
-```
+
 chatList.innerHTML = "";
 
 chats.forEach(chat => {
@@ -236,7 +236,7 @@ chats.forEach(chat => {
 
     chatList.appendChild(chatItem);
 });
-```
+
 
 }
 
@@ -249,7 +249,7 @@ const chat = chats.find(
 item => item.id === chatId
 );
 
-```
+
 if (!chat) {
     console.error("Chat not found:", chatId);
     return;
@@ -288,7 +288,7 @@ chat.messages.forEach(message => {
 });
 
 scrollToBottom();
-```
+
 
 }
 
@@ -301,7 +301,7 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 const welcome =
     document.createElement("div");
 
@@ -325,7 +325,7 @@ welcome.appendChild(heading);
 welcome.appendChild(paragraph);
 
 messagesContainer.appendChild(welcome);
-```
+
 
 }
 
@@ -345,7 +345,7 @@ console.error(
 return;
 }
 
-```
+
 const message =
     document.createElement("div");
 
@@ -381,7 +381,7 @@ messagesContainer.appendChild(message);
 if (scroll) {
     scrollToBottom();
 }
-```
+
 
 }
 
@@ -394,7 +394,7 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 removeTypingIndicator();
 
 const typing =
@@ -422,7 +422,7 @@ typing.appendChild(bubble);
 messagesContainer.appendChild(typing);
 
 scrollToBottom();
-```
+
 
 }
 
@@ -436,11 +436,11 @@ document.getElementById(
 "typingIndicator"
 );
 
-```
+
 if (typing) {
     typing.remove();
 }
-```
+
 
 }
 
@@ -453,10 +453,10 @@ if (!messagesContainer) {
 return;
 }
 
-```
+
 messagesContainer.scrollTop =
     messagesContainer.scrollHeight;
-```
+
 
 }
 
@@ -472,7 +472,7 @@ if (!chat) {
 return;
 }
 
-```
+
 if (
     !Array.isArray(chat.messages) ||
     chat.messages.length === 0
@@ -496,7 +496,7 @@ if (
     chat.title =
         title || "New Chat";
 }
-```
+
 
 }
 
@@ -509,7 +509,7 @@ if (isSending) {
 return;
 }
 
-```
+
 if (!messageInput) {
     console.error(
         "Message input does not exist."
@@ -795,7 +795,7 @@ try {
         messageInput.focus();
     }
 }
-```
+
 
 }
 
@@ -810,10 +810,10 @@ event.key === "Enter" &&
 ) {
 event.preventDefault();
 
-```
+
     sendMessage();
 }
-```
+
 
 }
 
@@ -826,7 +826,7 @@ if (!messageInput) {
 return;
 }
 
-```
+
 messageInput.style.height =
     "auto";
 
@@ -835,7 +835,7 @@ messageInput.style.height =
         messageInput.scrollHeight,
         200
     ) + "px";
-```
+
 
 }
 
@@ -848,14 +848,14 @@ if (!messageInput) {
 return;
 }
 
-```
+
 messageInput.value =
     text;
 
 resizeTextarea();
 
 messageInput.focus();
-```
+
 
 }
 
@@ -869,7 +869,7 @@ confirm(
 "Delete all chats?"
 );
 
-```
+
 if (!confirmed) {
     return;
 }
@@ -883,7 +883,7 @@ chats = [];
 currentChatId = null;
 
 createNewChat();
-```
+
 
 }
 
@@ -899,7 +899,7 @@ sendMessage
 );
 }
 
-```
+
 if (newChatButton) {
     newChatButton.addEventListener(
         "click",
@@ -920,7 +920,7 @@ if (messageInput) {
         resizeTextarea
     );
 }
-```
+
 
 }
 
@@ -953,11 +953,11 @@ clearAllChats;
 function initialize() {
 checkElements();
 
-```
+
 setupEvents();
 
 loadSavedChats();
-```
+
 
 }
 
