@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
 
     // ========================================
-    // PREFLIGHT
+    // PREFLIGHT REQUEST
     // ========================================
 
     if (req.method === "OPTIONS") {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
 
     // ========================================
-    // POST ONLY
+    // ONLY ALLOW POST
     // ========================================
 
     if (req.method !== "POST") {
@@ -48,18 +48,25 @@ export default async function handler(req, res) {
         // CHECK API KEY
         // ========================================
 
-        if (!process.env.GROQ_API_KEY) {
+        const apiKey =
+            process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+
+            console.error(
+                "GROQ_API_KEY is missing."
+            );
 
             return res.status(500).json({
                 error:
-                    "GROQ_API_KEY is missing from Vercel."
+                    "GROQ_API_KEY is not configured in Vercel."
             });
 
         }
 
 
         // ========================================
-        // GET MESSAGE
+        // GET USER MESSAGE
         // ========================================
 
         const message =
@@ -80,7 +87,21 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // ABORT AFTER 25 SECONDS
+        // LIMIT MESSAGE SIZE
+        // ========================================
+
+        if (message.length > 12000) {
+
+            return res.status(400).json({
+                error:
+                    "Message is too long."
+            });
+
+        }
+
+
+        // ========================================
+        // ABORT CONTROLLER
         // ========================================
 
         const controller =
@@ -88,20 +109,21 @@ export default async function handler(req, res) {
 
 
         const timeout =
-            setTimeout(
-                () => controller.abort(),
-                25000
-            );
+            setTimeout(() => {
 
+                controller.abort();
 
-        // ========================================
-        // CALL GROQ
-        // ========================================
+            }, 25000);
+
 
         let groqResponse;
 
 
         try {
+
+            // ========================================
+            // GROQ REQUEST
+            // ========================================
 
             groqResponse =
                 await fetch(
@@ -116,7 +138,7 @@ export default async function handler(req, res) {
                                 "application/json",
 
                             "Authorization":
-                                `Bearer ${process.env.GROQ_API_KEY}`
+                                `Bearer ${apiKey}`
 
                         },
 
@@ -126,8 +148,9 @@ export default async function handler(req, res) {
                         body:
                             JSON.stringify({
 
+                                // CURRENT MODEL
                                 model:
-                                    "llama-3.3-70b-versatile",
+                                    "openai/gpt-oss-20b",
 
                                 messages: [
 
@@ -136,7 +159,7 @@ export default async function handler(req, res) {
                                             "system",
 
                                         content:
-                                            "You are CSLLM, a helpful and friendly AI assistant. Give clear, useful answers."
+                                            "You are CSLLM, a helpful, friendly AI assistant. Answer questions clearly and accurately. Keep answers reasonably concise unless the user asks for detail."
                                     },
 
                                     {
@@ -153,7 +176,7 @@ export default async function handler(req, res) {
                                     0.7,
 
                                 max_tokens:
-                                    512
+                                    1024
 
                             })
 
@@ -168,7 +191,7 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // READ GROQ RESPONSE
+        // READ RESPONSE
         // ========================================
 
         const responseText =
@@ -176,7 +199,7 @@ export default async function handler(req, res) {
 
 
         console.log(
-            "Groq status:",
+            "Groq HTTP status:",
             groqResponse.status
         );
 
@@ -205,9 +228,13 @@ export default async function handler(req, res) {
 
             } catch {
 
-                // Response wasn't JSON
+                // Not JSON
 
             }
+
+
+            const groqError =
+                errorData?.error;
 
 
             return res.status(
@@ -215,15 +242,15 @@ export default async function handler(req, res) {
             ).json({
 
                 error:
-                    errorData?.error?.message ||
+                    groqError?.message ||
                     "Groq API returned an error.",
 
                 type:
-                    errorData?.error?.type ||
+                    groqError?.type ||
                     null,
 
                 code:
-                    errorData?.error?.code ||
+                    groqError?.code ||
                     null
 
             });
@@ -258,14 +285,22 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // GET AI MESSAGE
+        // GET AI RESPONSE
         // ========================================
 
         const reply =
             data?.choices?.[0]?.message?.content;
 
 
-        if (!reply) {
+        if (
+            !reply ||
+            typeof reply !== "string"
+        ) {
+
+            console.error(
+                "Unexpected Groq response:",
+                data
+            );
 
             return res.status(500).json({
 
@@ -278,7 +313,7 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // SUCCESS
+        // SEND RESPONSE TO WEBSITE
         // ========================================
 
         return res.status(200).json({
@@ -308,7 +343,7 @@ export default async function handler(req, res) {
             return res.status(504).json({
 
                 error:
-                    "Groq took too long to respond. Please try again."
+                    "The AI service took too long to respond. Please try again."
 
             });
 
@@ -316,7 +351,7 @@ export default async function handler(req, res) {
 
 
         // ========================================
-        // OTHER ERROR
+        // GENERAL ERROR
         // ========================================
 
         return res.status(500).json({
