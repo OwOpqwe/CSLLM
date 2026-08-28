@@ -1,16 +1,10 @@
 "use strict";
 
-/*
+const API_URL =
+"https://csllm.vercel.app/api/chat";
 
-* CHARLIE'S AI FRONTEND
-*
-* Backend:
-* https://csllm.vercel.app/api/chat
-*
-* The API key must NEVER be placed in this file.
-  */
-
-const API_URL = "https://csllm.vercel.app/api/chat";
+const STORAGE_KEY =
+"charlies_ai_chats";
 
 let chats = [];
 let currentChatId = null;
@@ -22,15 +16,6 @@ let sendButton = null;
 let newChatButton = null;
 let chatList = null;
 let chatTitle = null;
-
-let responseType = null;
-let graphType = null;
-
-let activeCharts = [];
-
-/* ==============================
-DOM
-============================== */
 
 function checkElements() {
 
@@ -53,47 +38,62 @@ chatList =
 chatTitle =
     document.getElementById("chatTitle");
 
-responseType =
-    document.getElementById("responseType");
-
-graphType =
-    document.getElementById("graphType");
 
 if (!messagesContainer) {
-    console.error("Charlie's AI: Missing #messages");
+
+    console.error(
+        "Charlie's AI: Missing #messages"
+    );
 }
+
 
 if (!messageInput) {
-    console.error("Charlie's AI: Missing #messageInput");
+
+    console.error(
+        "Charlie's AI: Missing #messageInput"
+    );
 }
+
 
 if (!sendButton) {
-    console.error("Charlie's AI: Missing #sendButton");
+
+    console.error(
+        "Charlie's AI: Missing #sendButton"
+    );
 }
+
 
 if (!chatList) {
-    console.error("Charlie's AI: Missing #chatList");
+
+    console.error(
+        "Charlie's AI: Missing #chatList"
+    );
 }
 
 
 }
-
-/* ==============================
-CREATE CHAT
-============================== */
 
 function createNewChat() {
 
 
 const chat = {
-    id: Date.now().toString(),
-    title: "New Chat",
-    messages: []
+
+    id:
+        Date.now().toString(),
+
+    title:
+        "New Chat",
+
+    messages:
+        []
 };
+
 
 chats.unshift(chat);
 
-currentChatId = chat.id;
+currentChatId =
+    chat.id;
+
 
 saveChats();
 
@@ -101,38 +101,57 @@ renderChatList();
 
 loadChat(chat.id);
 
+
 if (messageInput) {
+
     messageInput.value = "";
+
     messageInput.focus();
 }
 
 
 }
 
-/* ==============================
-DELETE CHAT
-============================== */
-
-function deleteChat(chatId, event) {
+function deleteChat(
+chatId,
+event
+) {
 
 
 if (event) {
+
     event.stopPropagation();
 }
 
-chats = chats.filter(
-    chat => chat.id !== chatId
-);
+
+chats =
+    chats.filter(
+        chat =>
+            chat.id !== chatId
+    );
+
 
 if (chats.length === 0) {
+
     createNewChat();
+
     return;
 }
 
-if (currentChatId === chatId) {
-    currentChatId = chats[0].id;
-    loadChat(currentChatId);
+
+if (
+    currentChatId ===
+    chatId
+) {
+
+    currentChatId =
+        chats[0].id;
+
+    loadChat(
+        currentChatId
+    );
 }
+
 
 saveChats();
 
@@ -141,17 +160,13 @@ renderChatList();
 
 }
 
-/* ==============================
-STORAGE
-============================== */
-
 function saveChats() {
 
 
 try {
 
     localStorage.setItem(
-        "charlies_ai_chats",
+        STORAGE_KEY,
         JSON.stringify(chats)
     );
 
@@ -161,7 +176,6 @@ try {
         "Could not save chats:",
         error
     );
-
 }
 
 
@@ -174,11 +188,14 @@ try {
 
     const saved =
         localStorage.getItem(
-            "charlies_ai_chats"
+            STORAGE_KEY
         );
 
+
     if (saved) {
-        chats = JSON.parse(saved);
+
+        chats =
+            JSON.parse(saved);
     }
 
 } catch (error) {
@@ -189,84 +206,111 @@ try {
     );
 
     chats = [];
-
 }
 
+
 if (!Array.isArray(chats)) {
+
     chats = [];
 }
 
+
 if (chats.length === 0) {
+
     createNewChat();
+
     return;
 }
 
-currentChatId = chats[0].id;
+
+currentChatId =
+    chats[0].id;
+
 
 renderChatList();
 
-loadChat(currentChatId);
-
-
-}
-
-/* ==============================
-CURRENT CHAT
-============================== */
-
-function getCurrentChat() {
-
-
-return chats.find(
-    chat => chat.id === currentChatId
+loadChat(
+    currentChatId
 );
 
 
 }
 
-/* ==============================
-CHAT LIST
-============================== */
+function getCurrentChat() {
+
+
+return chats.find(
+    chat =>
+        chat.id ===
+        currentChatId
+);
+
+
+}
 
 function renderChatList() {
 
 
 if (!chatList) {
+
     return;
 }
 
+
 chatList.innerHTML = "";
+
 
 chats.forEach(chat => {
 
     const chatItem =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     chatItem.className =
         "chat-item";
 
-    if (chat.id === currentChatId) {
-        chatItem.classList.add("active");
+
+    if (
+        chat.id ===
+        currentChatId
+    ) {
+
+        chatItem.classList.add(
+            "active"
+        );
     }
 
+
     const title =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
+
 
     title.className =
         "chat-item-title";
 
+
     title.textContent =
-        chat.title || "New Chat";
+        chat.title ||
+        "New Chat";
 
 
     const deleteButton =
-        document.createElement("button");
+        document.createElement(
+            "button"
+        );
+
 
     deleteButton.className =
         "delete-chat";
 
+
     deleteButton.textContent =
         "×";
+
 
     deleteButton.setAttribute(
         "aria-label",
@@ -277,6 +321,7 @@ chats.forEach(chat => {
     deleteButton.addEventListener(
         "click",
         event => {
+
             deleteChat(
                 chat.id,
                 event
@@ -285,7 +330,9 @@ chats.forEach(chat => {
     );
 
 
-    chatItem.appendChild(title);
+    chatItem.appendChild(
+        title
+    );
 
     chatItem.appendChild(
         deleteButton
@@ -301,141 +348,151 @@ chats.forEach(chat => {
 
             renderChatList();
 
-            loadChat(chat.id);
-
+            loadChat(
+                chat.id
+            );
         }
     );
 
 
-    chatList.appendChild(chatItem);
+    chatList.appendChild(
+        chatItem
+    );
 
 });
 
 
 }
 
-/* ==============================
-LOAD CHAT
-============================== */
-
 function loadChat(chatId) {
 
 
 const chat =
     chats.find(
-        item => item.id === chatId
+        item =>
+            item.id ===
+            chatId
     );
 
+
 if (!chat) {
+
+    console.error(
+        "Chat not found:",
+        chatId
+    );
+
     return;
 }
 
-currentChatId = chatId;
+
+currentChatId =
+    chatId;
+
 
 if (chatTitle) {
+
     chatTitle.textContent =
-        chat.title || "New Chat";
+        chat.title ||
+        "New Chat";
 }
 
+
 if (!messagesContainer) {
+
     return;
 }
 
-activeCharts.forEach(
-    chart => {
-        try {
-            chart.destroy();
-        } catch {}
-    }
-);
 
-activeCharts = [];
+messagesContainer.innerHTML =
+    "";
 
-messagesContainer.innerHTML = "";
 
 if (
-    !Array.isArray(chat.messages) ||
+    !Array.isArray(
+        chat.messages
+    ) ||
     chat.messages.length === 0
 ) {
 
     showWelcome();
 
     return;
-
 }
 
 
 chat.messages.forEach(
     message => {
 
-        if (message.role === "graph") {
-
-            addGraphToScreen(
-                message.graph,
-                false
-            );
-
-        } else {
-
-            addMessageToScreen(
-                message.role,
-                message.content,
-                false
-            );
-
-        }
-
+        addMessageToScreen(
+            message.role,
+            message.content,
+            false
+        );
     }
 );
+
 
 scrollToBottom();
 
 
 }
 
-/* ==============================
-WELCOME
-============================== */
-
 function showWelcome() {
 
 
 if (!messagesContainer) {
+
     return;
 }
 
+
 const welcome =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
+
 
 welcome.className =
     "welcome";
 
+
 const heading =
-    document.createElement("h2");
+    document.createElement(
+        "h2"
+    );
+
 
 heading.textContent =
     "Welcome to Charlie's AI";
 
 
 const paragraph =
-    document.createElement("p");
+    document.createElement(
+        "p"
+    );
+
 
 paragraph.textContent =
     "Ask me anything, or ask me to create a graph.";
 
 
-welcome.appendChild(heading);
+welcome.appendChild(
+    heading
+);
 
-welcome.appendChild(paragraph);
 
-messagesContainer.appendChild(welcome);
+welcome.appendChild(
+    paragraph
+);
+
+
+messagesContainer.appendChild(
+    welcome
+);
 
 
 }
-
-/* ==============================
-ADD MESSAGE
-============================== */
 
 function addMessageToScreen(
 role,
@@ -445,11 +502,16 @@ scroll = true
 
 
 if (!messagesContainer) {
+
     return;
 }
 
+
 const message =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
+
 
 message.className =
     "message";
@@ -466,227 +528,478 @@ if (role === "user") {
     message.classList.add(
         "assistant-message"
     );
-
 }
 
 
 const bubble =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
+
 
 bubble.className =
     "message-bubble";
 
-bubble.textContent =
-    content;
+
+if (role === "assistant") {
+
+    renderAssistantMessage(
+        bubble,
+        content
+    );
+
+} else {
+
+    bubble.textContent =
+        content;
+}
 
 
-message.appendChild(bubble);
+message.appendChild(
+    bubble
+);
 
-messagesContainer.appendChild(message);
+
+messagesContainer.appendChild(
+    message
+);
 
 
 if (scroll) {
+
     scrollToBottom();
 }
 
 
 }
 
-/* ==============================
-GRAPH
-============================== */
+function renderAssistantMessage(
+container,
+content
+) {
 
-function addGraphToScreen(
-graph,
-scroll = true
+
+const graph =
+    extractGraph(content);
+
+
+const text =
+    graph
+        ? removeGraphBlock(
+            content
+        )
+        : content;
+
+
+if (text.trim()) {
+
+    const textElement =
+        document.createElement(
+            "div"
+        );
+
+
+    textElement.className =
+        "assistant-text";
+
+
+    textElement.textContent =
+        text.trim();
+
+
+    container.appendChild(
+        textElement
+    );
+}
+
+
+if (graph) {
+
+    createGraph(
+        container,
+        graph
+    );
+}
+
+
+}
+
+function extractGraph(content) {
+
+
+const start =
+    content.indexOf(
+        "GRAPH_START"
+    );
+
+
+const end =
+    content.indexOf(
+        "GRAPH_END"
+    );
+
+
+if (
+    start === -1 ||
+    end === -1 ||
+    end <= start
+) {
+
+    return null;
+}
+
+
+const jsonText =
+    content
+        .substring(
+            start +
+            "GRAPH_START".length,
+            end
+        )
+        .trim();
+
+
+try {
+
+    const graph =
+        JSON.parse(
+            jsonText
+        );
+
+
+    if (
+        !graph ||
+        !Array.isArray(
+            graph.labels
+        ) ||
+        !Array.isArray(
+            graph.values
+        )
+    ) {
+
+        return null;
+    }
+
+
+    return graph;
+
+} catch (error) {
+
+    console.error(
+        "Could not parse graph data:",
+        error
+    );
+
+    return null;
+}
+
+
+}
+
+function removeGraphBlock(
+content
+) {
+
+
+return content.replace(
+    /GRAPH_START[\s\S]*?GRAPH_END/g,
+    ""
+).trim();
+
+
+}
+
+function createGraph(
+container,
+graph
 ) {
 
 
 if (
-    !messagesContainer ||
-    !graph
+    typeof Chart ===
+    "undefined"
 ) {
+
+    const error =
+        document.createElement(
+            "p"
+        );
+
+
+    error.textContent =
+        "Graphing library could not be loaded.";
+
+
+    container.appendChild(
+        error
+    );
+
+
     return;
 }
 
-const wrapper =
-    document.createElement("div");
 
-wrapper.className =
-    "graph-message";
+const graphWrapper =
+    document.createElement(
+        "div"
+    );
 
 
-const container =
-    document.createElement("div");
-
-container.className =
+graphWrapper.className =
     "graph-container";
 
 
 const canvas =
-    document.createElement("canvas");
+    document.createElement(
+        "canvas"
+    );
 
 
-container.appendChild(canvas);
-
-wrapper.appendChild(container);
-
-messagesContainer.appendChild(wrapper);
+graphWrapper.appendChild(
+    canvas
+);
 
 
-const type =
-    ["bar", "line", "pie", "scatter"]
-        .includes(graph.type)
-        ? graph.type
-        : "bar";
+container.appendChild(
+    graphWrapper
+);
 
 
-const labels =
-    Array.isArray(graph.labels)
-        ? graph.labels
-        : [];
+let chartType =
+    graph.type || "line";
 
 
-const values =
-    Array.isArray(graph.values)
-        ? graph.values
-        : [];
+if (
+    chartType !== "line" &&
+    chartType !== "bar" &&
+    chartType !== "scatter"
+) {
 
-
-let chartData;
-
-
-if (type === "scatter") {
-
-    chartData = {
-        datasets: [
-            {
-                label:
-                    graph.label ||
-                    "Data",
-                data:
-                    values,
-                parsing: false
-            }
-        ]
-    };
-
-} else {
-
-    chartData = {
-
-        labels: labels,
-
-        datasets: [
-            {
-                label:
-                    graph.label ||
-                    "Data",
-
-                data:
-                    values,
-
-                borderWidth: 2,
-
-                tension: 0.25
-            }
-        ]
-
-    };
-
+    chartType =
+        "line";
 }
 
 
-const chart =
-    new Chart(
-        canvas.getContext("2d"),
+let labels =
+    graph.labels;
+
+
+let values =
+    graph.values;
+
+
+let datasets;
+
+
+if (
+    chartType ===
+    "scatter"
+) {
+
+    datasets = [
+
         {
-            type: type,
 
-            data: chartData,
+            label:
+                graph.yLabel ||
+                "Value",
 
-            options: {
+            data:
+                labels.map(
+                    (x, index) => ({
 
-                responsive: true,
+                        x:
+                            Number(x),
 
-                maintainAspectRatio: false,
+                        y:
+                            Number(
+                                values[index]
+                            )
 
-                plugins: {
+                    })
+                ),
 
-                    title: {
+            borderWidth:
+                2,
 
-                        display:
-                            Boolean(
-                                graph.title
-                            ),
+            showLine:
+                true
 
-                        text:
-                            graph.title ||
-                            "Graph"
+        }
 
-                    },
+    ];
 
-                    legend: {
+} else {
 
-                        display:
-                            type !== "bar" &&
-                            type !== "line"
+    datasets = [
 
-                    }
+        {
+
+            label:
+                graph.yLabel ||
+                "Value",
+
+            data:
+                values,
+
+            borderWidth:
+                2,
+
+            tension:
+                0.3,
+
+            fill:
+                false
+
+        }
+
+    ];
+}
+
+
+const config = {
+
+    type:
+        chartType,
+
+    data: {
+
+        labels:
+            chartType ===
+            "scatter"
+                ? undefined
+                : labels,
+
+        datasets:
+            datasets
+
+    },
+
+    options: {
+
+        responsive:
+            true,
+
+        maintainAspectRatio:
+            false,
+
+        plugins: {
+
+            title: {
+
+                display:
+                    Boolean(
+                        graph.title
+                    ),
+
+                text:
+                    graph.title ||
+                    "Graph"
+
+            }
+
+        },
+
+        scales: {
+
+            x: {
+
+                title: {
+
+                    display:
+                        Boolean(
+                            graph.xLabel
+                        ),
+
+                    text:
+                        graph.xLabel ||
+                        "X"
+
+                }
+
+            },
+
+            y: {
+
+                title: {
+
+                    display:
+                        Boolean(
+                            graph.yLabel
+                        ),
+
+                    text:
+                        graph.yLabel ||
+                        "Y"
 
                 }
 
             }
+
         }
-    );
+
+    }
+
+};
 
 
-canvas.parentElement.style.height =
-    "420px";
-
-
-activeCharts.push(chart);
-
-
-if (scroll) {
-    scrollToBottom();
-}
+new Chart(
+    canvas,
+    config
+);
 
 
 }
-
-/* ==============================
-TYPING
-============================== */
 
 function showTypingIndicator() {
 
 
+if (!messagesContainer) {
+
+    return;
+}
+
+
 removeTypingIndicator();
 
+
 const typing =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
+
 
 typing.id =
     "typingIndicator";
+
 
 typing.className =
     "message assistant-message";
 
 
 const bubble =
-    document.createElement("div");
+    document.createElement(
+        "div"
+    );
+
 
 bubble.className =
     "message-bubble";
+
 
 bubble.textContent =
     "Thinking...";
 
 
-typing.appendChild(bubble);
+typing.appendChild(
+    bubble
+);
 
-messagesContainer.appendChild(typing);
+
+messagesContainer.appendChild(
+    typing
+);
+
 
 scrollToBottom();
 
@@ -701,33 +1014,29 @@ const typing =
         "typingIndicator"
     );
 
+
 if (typing) {
+
     typing.remove();
 }
 
 
 }
 
-/* ==============================
-SCROLL
-============================== */
-
 function scrollToBottom() {
 
 
 if (!messagesContainer) {
+
     return;
 }
+
 
 messagesContainer.scrollTop =
     messagesContainer.scrollHeight;
 
 
 }
-
-/* ==============================
-TITLE
-============================== */
 
 function updateChatTitle(
 chat,
@@ -736,8 +1045,10 @@ firstMessage
 
 
 if (!chat) {
+
     return;
 }
+
 
 if (
     !Array.isArray(
@@ -745,48 +1056,52 @@ if (
     ) ||
     chat.messages.length === 0
 ) {
+
     return;
 }
 
+
 if (
     !chat.title ||
-    chat.title === "New Chat"
+    chat.title ===
+        "New Chat"
 ) {
 
     let title =
         firstMessage.trim();
 
-    if (title.length > 30) {
+
+    if (
+        title.length > 30
+    ) {
 
         title =
             title.substring(
                 0,
                 30
-            ) +
-            "...";
-
+            ) + "...";
     }
 
+
     chat.title =
-        title || "New Chat";
-
+        title ||
+        "New Chat";
 }
 
 
 }
-
-/* ==============================
-SEND
-============================== */
 
 async function sendMessage() {
 
 
 if (isSending) {
+
     return;
 }
 
+
 if (!messageInput) {
+
     return;
 }
 
@@ -796,6 +1111,7 @@ const text =
 
 
 if (!text) {
+
     return;
 }
 
@@ -811,36 +1127,33 @@ if (!chat) {
     chat =
         getCurrentChat();
 
+
     if (!chat) {
+
         return;
     }
-
 }
 
 
 isSending = true;
 
 
-const selectedResponseType =
-    responseType
-        ? responseType.value
-        : "normal";
+messageInput.value =
+    "";
 
 
-const selectedGraphType =
-    graphType
-        ? graphType.value
-        : "auto";
-
-
-messageInput.value = "";
-
-resizeTextarea();
+messageInput.style.height =
+    "auto";
 
 
 chat.messages.push({
-    role: "user",
-    content: text
+
+    role:
+        "user",
+
+    content:
+        text
+
 });
 
 
@@ -854,7 +1167,9 @@ saveChats();
 
 renderChatList();
 
-loadChat(chat.id);
+loadChat(
+    chat.id
+);
 
 
 showTypingIndicator();
@@ -867,36 +1182,48 @@ if (sendButton) {
 
     sendButton.textContent =
         "Sending...";
-
 }
 
 
 try {
 
+    console.log(
+        "Sending request to:",
+        API_URL
+    );
+
+
     const response =
         await fetch(
             API_URL,
             {
-                method: "POST",
+
+                method:
+                    "POST",
 
                 headers: {
+
                     "Content-Type":
                         "application/json"
+
                 },
 
                 body:
                     JSON.stringify({
+
                         messages:
-                            chat.messages,
+                            chat.messages
 
-                        responseType:
-                            selectedResponseType,
-
-                        graphType:
-                            selectedGraphType
                     })
+
             }
         );
+
+
+    console.log(
+        "Backend status:",
+        response.status
+    );
 
 
     const responseText =
@@ -916,36 +1243,57 @@ try {
     } catch {
 
         data = {
-            error:
-                responseText
-        };
 
+            error:
+                responseText ||
+                "Invalid server response."
+
+        };
     }
 
 
     if (!response.ok) {
 
         throw new Error(
+
             data?.error ||
             "The AI service returned an error."
-        );
 
+        );
     }
 
 
-    removeTypingIndicator();
-
-
     const aiMessage =
-        typeof data.reply === "string"
+        typeof data?.reply ===
+        "string"
             ? data.reply
-            : "I received an empty response.";
+            : "";
+
+
+    if (
+        !aiMessage.trim()
+    ) {
+
+        throw new Error(
+            "The AI returned an empty response."
+        );
+    }
 
 
     chat.messages.push({
-        role: "assistant",
-        content: aiMessage
+
+        role:
+            "assistant",
+
+        content:
+            aiMessage
+
     });
+
+
+    saveChats();
+
+    removeTypingIndicator();
 
 
     addMessageToScreen(
@@ -954,33 +1302,13 @@ try {
     );
 
 
-    if (
-        data.graph &&
-        typeof data.graph === "object"
-    ) {
-
-        chat.messages.push({
-            role: "graph",
-            graph: data.graph
-        });
-
-
-        addGraphToScreen(
-            data.graph
-        );
-
-    }
-
-
-    saveChats();
-
     renderChatList();
 
 
 } catch (error) {
 
     console.error(
-        "Charlie's AI error:",
+        "AI connection error:",
         error
     );
 
@@ -989,14 +1317,18 @@ try {
 
 
     addMessageToScreen(
+
         "assistant",
-        "Sorry, I couldn't connect to Charlie's AI.\n\n" +
+
+        "Sorry, I couldn't connect to the AI.\n\n" +
         error.message
+
     );
 
 } finally {
 
-    isSending = false;
+    isSending =
+        false;
 
 
     if (sendButton) {
@@ -1006,95 +1338,107 @@ try {
 
         sendButton.textContent =
             "Send";
-
     }
 
 
     if (messageInput) {
+
         messageInput.focus();
     }
-
 }
 
 
 }
-
-/* ==============================
-ENTER
-============================== */
 
 function handleKey(event) {
 
 
 if (
-    event.key === "Enter" &&
+    event.key ===
+        "Enter" &&
     !event.shiftKey
 ) {
 
     event.preventDefault();
 
     sendMessage();
-
 }
 
 
 }
-
-/* ==============================
-RESIZE
-============================== */
 
 function resizeTextarea() {
 
 
 if (!messageInput) {
+
     return;
 }
 
+
 messageInput.style.height =
     "auto";
+
 
 messageInput.style.height =
     Math.min(
         messageInput.scrollHeight,
         200
-    ) +
-    "px";
+    ) + "px";
 
 
 }
 
-/* ==============================
-CLEAR
-============================== */
+function suggest(text) {
+
+
+if (!messageInput) {
+
+    return;
+}
+
+
+messageInput.value =
+    text;
+
+
+resizeTextarea();
+
+messageInput.focus();
+
+
+}
 
 function clearAllChats() {
 
 
-if (
-    !confirm(
+const confirmed =
+    confirm(
         "Delete all chats?"
-    )
-) {
+    );
+
+
+if (!confirmed) {
+
     return;
 }
 
+
 localStorage.removeItem(
-    "charlies_ai_chats"
+    STORAGE_KEY
 );
+
 
 chats = [];
 
-currentChatId = null;
+currentChatId =
+    null;
+
 
 createNewChat();
 
 
 }
-
-/* ==============================
-EVENTS
-============================== */
 
 function setupEvents() {
 
@@ -1105,7 +1449,6 @@ if (sendButton) {
         "click",
         sendMessage
     );
-
 }
 
 
@@ -1115,7 +1458,6 @@ if (newChatButton) {
         "click",
         createNewChat
     );
-
 }
 
 
@@ -1131,21 +1473,19 @@ if (messageInput) {
         "input",
         resizeTextarea
     );
-
 }
 
 
 }
-
-/* ==============================
-GLOBALS
-============================== */
 
 window.sendMessage =
 sendMessage;
 
 window.handleKey =
 handleKey;
+
+window.suggest =
+suggest;
 
 window.createNewChat =
 createNewChat;
@@ -1155,10 +1495,6 @@ deleteChat;
 
 window.clearAllChats =
 clearAllChats;
-
-/* ==============================
-INITIALIZE
-============================== */
 
 function initialize() {
 
