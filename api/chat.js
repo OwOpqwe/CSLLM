@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
 
-    // ========================================
+    // ================================
     // CORS
-    // ========================================
+    // ================================
 
     res.setHeader(
         "Access-Control-Allow-Origin",
@@ -19,127 +19,163 @@ export default async function handler(req, res) {
         "Content-Type"
     );
 
-
-    // ========================================
-    // PREFLIGHT REQUEST
-    // ========================================
-
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
 
-
-    // ========================================
-    // ONLY ALLOW POST
-    // ========================================
-
     if (req.method !== "POST") {
-
         return res.status(405).json({
             error: "Method not allowed"
         });
-
     }
-
 
     try {
 
-        // ========================================
-        // CHECK API KEY
-        // ========================================
+        // ================================
+        // API KEY
+        // ================================
 
-        const apiKey =
-            process.env.GROQ_API_KEY;
+        const apiKey = process.env.GROQ_API_KEY;
 
         if (!apiKey) {
-
-            console.error(
-                "GROQ_API_KEY is missing."
-            );
-
             return res.status(500).json({
-                error:
-                    "GROQ_API_KEY is not configured in Vercel."
+                error: "GROQ_API_KEY is not configured in Vercel."
             });
-
         }
 
+        // ================================
+        // REQUEST DATA
+        // ================================
 
-        // ========================================
-        // GET USER MESSAGE
-        // ========================================
+        const body = req.body || {};
 
-        const message =
-            req.body?.message;
+        const message = body.message;
 
+        const conversationHistory =
+            Array.isArray(body.history)
+                ? body.history
+                : [];
 
         if (
             !message ||
             typeof message !== "string"
         ) {
-
             return res.status(400).json({
-                error:
-                    "Message is required."
+                error: "Message is required."
             });
-
         }
 
-
-        // ========================================
+        // ================================
         // LIMIT MESSAGE SIZE
-        // ========================================
+        // ================================
 
         if (message.length > 12000) {
-
             return res.status(400).json({
-                error:
-                    "Message is too long."
+                error: "Message is too long."
             });
-
         }
 
+        // ================================
+        // CLEAN HISTORY
+        // ================================
 
-        // ========================================
-        // ABORT CONTROLLER
-        // ========================================
+        const cleanedHistory =
+            conversationHistory
+                .filter(item =>
+                    item &&
+                    (
+                        item.role === "user" ||
+                        item.role === "assistant"
+                    ) &&
+                    typeof item.content === "string"
+                )
+                .slice(-20);
+
+        // ================================
+        // SYSTEM PROMPT
+        // ================================
+
+        const systemPrompt = `
+You are CSLLM, a custom AI assistant.
+
+You are friendly, intelligent, helpful, and conversational.
+
+You help users with:
+- Schoolwork
+- Coding
+- Mathematics
+- Science
+- Geography
+- Writing
+- Research
+- Creative projects
+- General questions
+
+IMPORTANT RULES:
+
+1. Answer the user's actual question directly.
+2. Do not randomly suggest projects unless the user asks for ideas.
+3. Do not claim to be ChatGPT.
+4. If the user asks what AI you are, say you are CSLLM.
+5. Explain difficult concepts clearly.
+6. For schoolwork, explain things at an appropriate level.
+7. Use Markdown when useful.
+8. Avoid unnecessary giant tables.
+9. Keep normal answers reasonably concise.
+10. Give detailed explanations when the user asks for them.
+11. Maintain context from the conversation.
+12. Do not repeat information unnecessarily.
+13. Be natural and conversational.
+
+You are CSLLM.
+`;
+
+        // ================================
+        // CREATE MESSAGES
+        // ================================
+
+        const messages = [
+            {
+                role: "system",
+                content: systemPrompt
+            },
+
+            ...cleanedHistory,
+
+            {
+                role: "user",
+                content: message
+            }
+        ];
+
+        // ================================
+        // CALL GROQ
+        // ================================
 
         const controller =
             new AbortController();
 
-
         const timeout =
             setTimeout(() => {
-
                 controller.abort();
-
-            }, 25000);
-
+            }, 30000);
 
         let groqResponse;
 
-
         try {
-
-            // ========================================
-            // GROQ REQUEST
-            // ========================================
 
             groqResponse =
                 await fetch(
                     "https://api.groq.com/openai/v1/chat/completions",
                     {
-
                         method: "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
 
                             "Authorization":
                                 `Bearer ${apiKey}`
-
                         },
 
                         signal:
@@ -148,38 +184,18 @@ export default async function handler(req, res) {
                         body:
                             JSON.stringify({
 
-                                // CURRENT MODEL
                                 model:
                                     "openai/gpt-oss-20b",
 
-                                messages: [
-
-                                    {
-                                        role:
-                                            "system",
-
-                                        content:
-                                            "You are CSLLM, a helpful, friendly AI assistant. Answer questions clearly and accurately. Keep answers reasonably concise unless the user asks for detail."
-                                    },
-
-                                    {
-                                        role:
-                                            "user",
-
-                                        content:
-                                            message
-                                    }
-
-                                ],
+                                messages:
+                                    messages,
 
                                 temperature:
                                     0.7,
 
                                 max_tokens:
                                     1024
-
                             })
-
                     }
                 );
 
@@ -189,53 +205,40 @@ export default async function handler(req, res) {
 
         }
 
-
-        // ========================================
+        // ================================
         // READ RESPONSE
-        // ========================================
+        // ================================
 
         const responseText =
             await groqResponse.text();
 
-
         console.log(
-            "Groq HTTP status:",
+            "Groq status:",
             groqResponse.status
         );
 
-
-        console.log(
-            "Groq response:",
-            responseText
-        );
-
-
-        // ========================================
+        // ================================
         // GROQ ERROR
-        // ========================================
+        // ================================
 
         if (!groqResponse.ok) {
 
-            let errorData = null;
-
+            let errorData;
 
             try {
-
                 errorData =
-                    JSON.parse(
-                        responseText
-                    );
-
+                    JSON.parse(responseText);
             } catch {
-
-                // Not JSON
-
+                errorData = null;
             }
-
 
             const groqError =
                 errorData?.error;
 
+            console.error(
+                "Groq error:",
+                responseText
+            );
 
             return res.status(
                 groqResponse.status
@@ -243,7 +246,7 @@ export default async function handler(req, res) {
 
                 error:
                     groqError?.message ||
-                    "Groq API returned an error.",
+                    "The AI service returned an error.",
 
                 type:
                     groqError?.type ||
@@ -252,76 +255,55 @@ export default async function handler(req, res) {
                 code:
                     groqError?.code ||
                     null
-
             });
-
         }
 
-
-        // ========================================
-        // PARSE SUCCESS
-        // ========================================
+        // ================================
+        // PARSE RESPONSE
+        // ================================
 
         let data;
-
 
         try {
 
             data =
-                JSON.parse(
-                    responseText
-                );
+                JSON.parse(responseText);
 
         } catch {
 
             return res.status(500).json({
-
                 error:
-                    "Groq returned invalid JSON."
-
+                    "The AI returned invalid data."
             });
 
         }
 
-
-        // ========================================
-        // GET AI RESPONSE
-        // ========================================
+        // ================================
+        // GET AI MESSAGE
+        // ================================
 
         const reply =
             data?.choices?.[0]?.message?.content;
-
 
         if (
             !reply ||
             typeof reply !== "string"
         ) {
 
-            console.error(
-                "Unexpected Groq response:",
-                data
-            );
-
             return res.status(500).json({
-
                 error:
                     "The AI returned an empty response."
-
             });
 
         }
 
-
-        // ========================================
-        // SEND RESPONSE TO WEBSITE
-        // ========================================
+        // ================================
+        // SEND TO FRONTEND
+        // ================================
 
         return res.status(200).json({
-
             reply: reply
-
         });
-
 
     } catch (error) {
 
@@ -330,38 +312,21 @@ export default async function handler(req, res) {
             error
         );
 
-
-        // ========================================
-        // TIMEOUT
-        // ========================================
-
         if (
-            error.name ===
-            "AbortError"
+            error.name === "AbortError"
         ) {
 
             return res.status(504).json({
-
                 error:
-                    "The AI service took too long to respond. Please try again."
-
+                    "The AI took too long to respond."
             });
 
         }
 
-
-        // ========================================
-        // GENERAL ERROR
-        // ========================================
-
         return res.status(500).json({
-
             error:
                 error.message ||
                 "Internal server error."
-
         });
-
     }
-
 }
