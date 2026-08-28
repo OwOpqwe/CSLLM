@@ -1,95 +1,69 @@
-// ============================================
-// CSLLM CHAT SYSTEM
-// ============================================```javascript
-// ============================================================
-// CSLLM CHAT.JS
-// ============================================================
-// Frontend chat system
-//
-// IMPORTANT:
-// Your API key should NOT be inside this file.
-// The API key belongs in your Vercel backend.
-//
-// Expected backend:
-// https://csllm.vercel.app/api/chat
-// ============================================================
-
+````javascript
+"use strict";
 
 // ============================================================
-// CONFIGURATION
+// CSLLM FRONTEND
 // ============================================================
 
-const API_URL =
-    "https://csllm.vercel.app/api/chat";
+const API_URL = "https://csllm.vercel.app/api/chat";
 
-const STORAGE_KEY =
-    "csllm_chats";
+const STORAGE_KEY = "csllm_chats";
+const CURRENT_CHAT_KEY = "csllm_current_chat";
 
-const CURRENT_CHAT_KEY =
-    "csllm_current_chat";
-
-
-// ============================================================
-// STATE
-// ============================================================
-
-let chats = {};
-
+let chats = [];
 let currentChatId = null;
-
 let isSending = false;
 
 
 // ============================================================
-// CREATE UNIQUE CHAT ID
+// CHAT CREATION
 // ============================================================
 
-function createChatId() {
+function createChat() {
+    return {
+        id:
+            "chat-" +
+            Date.now() +
+            "-" +
+            Math.random().toString(36).substring(2, 9),
 
-    return (
-        "chat_" +
-        Date.now() +
-        "_" +
-        Math.random()
-            .toString(36)
-            .substring(2, 9)
-    );
+        title: "New Chat",
+
+        messages: [],
+
+        createdAt: Date.now(),
+
+        updatedAt: Date.now()
+    };
 }
 
 
 // ============================================================
-// LOAD CHATS FROM LOCAL STORAGE
+// LOAD CHATS
 // ============================================================
 
 function loadChats() {
-
     try {
-
         const saved =
-            localStorage.getItem(
-                STORAGE_KEY
-            );
+            localStorage.getItem(STORAGE_KEY);
 
         if (saved) {
-
-            chats =
-                JSON.parse(saved);
-
+            chats = JSON.parse(saved);
         } else {
-
-            chats = {};
-
+            chats = [];
         }
 
     } catch (error) {
-
         console.error(
             "Could not load chats:",
             error
         );
 
-        chats = {};
+        chats = [];
+    }
 
+    if (!Array.isArray(chats)) {
+        chats = [];
     }
 }
 
@@ -99,102 +73,25 @@ function loadChats() {
 // ============================================================
 
 function saveChats() {
-
     try {
-
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(chats)
         );
 
-    } catch (error) {
+        if (currentChatId) {
+            localStorage.setItem(
+                CURRENT_CHAT_KEY,
+                currentChatId
+            );
+        }
 
+    } catch (error) {
         console.error(
             "Could not save chats:",
             error
         );
-
     }
-}
-
-
-// ============================================================
-// SAVE CURRENT CHAT ID
-// ============================================================
-
-function saveCurrentChatId() {
-
-    if (currentChatId) {
-
-        localStorage.setItem(
-            CURRENT_CHAT_KEY,
-            currentChatId
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// GET CURRENT CHAT ID
-// ============================================================
-
-function getSavedChatId() {
-
-    return localStorage.getItem(
-        CURRENT_CHAT_KEY
-    );
-
-}
-
-
-// ============================================================
-// CREATE NEW CHAT
-// ============================================================
-
-function createNewChat() {
-
-    const id =
-        createChatId();
-
-    chats[id] = {
-
-        id: id,
-
-        title: "New Chat",
-
-        messages: [],
-
-        createdAt:
-            Date.now(),
-
-        updatedAt:
-            Date.now()
-
-    };
-
-    currentChatId = id;
-
-    saveChats();
-
-    saveCurrentChatId();
-
-    renderChatList();
-
-    loadChat(id);
-
-}
-
-
-// ============================================================
-// NEW CHAT BUTTON
-// ============================================================
-
-function newChat() {
-
-    createNewChat();
-
 }
 
 
@@ -203,18 +100,69 @@ function newChat() {
 // ============================================================
 
 function getCurrentChat() {
+    return chats.find(
+        chat => chat.id === currentChatId
+    );
+}
 
-    if (
-        !currentChatId ||
-        !chats[currentChatId]
-    ) {
 
-        return null;
+// ============================================================
+// CREATE NEW CHAT
+// ============================================================
 
+function newChat() {
+
+    const chat = createChat();
+
+    chats.unshift(chat);
+
+    currentChatId = chat.id;
+
+    saveChats();
+
+    renderChatList();
+
+    renderCurrentChat();
+
+    const input =
+        document.getElementById(
+            "message-input"
+        );
+
+    if (input) {
+        input.focus();
+    }
+}
+
+
+// Keep old function name working
+function createNewChat() {
+    newChat();
+}
+
+
+// ============================================================
+// SWITCH CHAT
+// ============================================================
+
+function switchChat(id) {
+
+    const chat =
+        chats.find(
+            chat => chat.id === id
+        );
+
+    if (!chat) {
+        return;
     }
 
-    return chats[currentChatId];
+    currentChatId = id;
 
+    saveChats();
+
+    renderChatList();
+
+    renderCurrentChat();
 }
 
 
@@ -224,63 +172,61 @@ function getCurrentChat() {
 
 function deleteChat(id) {
 
-    if (!chats[id]) {
-
-        return;
-
-    }
-
-    const confirmed =
-        confirm(
-            "Delete this chat?"
+    const chat =
+        chats.find(
+            chat => chat.id === id
         );
 
-    if (!confirmed) {
-
+    if (!chat) {
         return;
-
     }
 
-    delete chats[id];
-
-    saveChats();
-
     if (
+        !confirm(
+            `Delete "${chat.title}"?`
+        )
+    ) {
+        return;
+    }
+
+    chats =
+        chats.filter(
+            chat => chat.id !== id
+        );
+
+
+    if (chats.length === 0) {
+
+        const newChatObject =
+            createChat();
+
+        chats.push(
+            newChatObject
+        );
+
+        currentChatId =
+            newChatObject.id;
+
+    } else if (
         currentChatId === id
     ) {
 
-        const remaining =
-            Object.keys(chats);
+        chats.sort(
+            (a, b) =>
+                b.updatedAt -
+                a.updatedAt
+        );
 
-        if (
-            remaining.length > 0
-        ) {
-
-            remaining.sort(
-                (a, b) =>
-                    chats[b].updatedAt -
-                    chats[a].updatedAt
-            );
-
-            currentChatId =
-                remaining[0];
-
-            saveCurrentChatId();
-
-            loadChat(
-                currentChatId
-            );
-
-        } else {
-
-            createNewChat();
-
-        }
-
+        currentChatId =
+            chats[0].id;
     }
+
+
+    saveChats();
 
     renderChatList();
 
+    renderCurrentChat();
 }
 
 
@@ -290,45 +236,71 @@ function deleteChat(id) {
 
 function renameChat(id) {
 
-    if (!chats[id]) {
-
-        return;
-
-    }
-
-    const newName =
-        prompt(
-            "Enter a new chat name:",
-            chats[id].title
+    const chat =
+        chats.find(
+            chat => chat.id === id
         );
 
-    if (
-        newName === null
-    ) {
-
+    if (!chat) {
         return;
+    }
 
+    const name =
+        prompt(
+            "Enter a new chat name:",
+            chat.title
+        );
+
+    if (name === null) {
+        return;
     }
 
     const cleaned =
-        newName.trim();
+        name.trim();
 
     if (!cleaned) {
-
         return;
-
     }
 
-    chats[id].title =
+    chat.title =
         cleaned;
 
-    chats[id].updatedAt =
+    chat.updatedAt =
         Date.now();
 
     saveChats();
 
     renderChatList();
+}
 
+
+// ============================================================
+// CHAT OPTIONS
+// ============================================================
+
+function showChatMenu(id) {
+
+    const choice =
+        prompt(
+            "Type:\nrename - Rename chat\ndelete - Delete chat"
+        );
+
+    if (!choice) {
+        return;
+    }
+
+    const command =
+        choice
+            .trim()
+            .toLowerCase();
+
+    if (command === "rename") {
+        renameChat(id);
+    }
+
+    if (command === "delete") {
+        deleteChat(id);
+    }
 }
 
 
@@ -344,46 +316,34 @@ function renderChatList() {
         );
 
     if (!list) {
-
-        console.error(
-            "CSLLM Error: #chat-list was not found."
+        console.warn(
+            "#chat-list was not found."
         );
 
         return;
-
     }
 
     list.innerHTML = "";
 
-    const chatIds =
-        Object.keys(chats);
 
-    chatIds.sort(
-        (a, b) =>
-            chats[b].updatedAt -
-            chats[a].updatedAt
-    );
+    const sortedChats =
+        [...chats].sort(
+            (a, b) =>
+                b.updatedAt -
+                a.updatedAt
+        );
 
 
-    chatIds.forEach(
-        function(id) {
+    sortedChats.forEach(
+        chat => {
 
-            const chat =
-                chats[id];
-
-            const wrapper =
+            const row =
                 document.createElement(
                     "div"
                 );
 
-            wrapper.style.display =
-                "flex";
-
-            wrapper.style.alignItems =
-                "center";
-
-            wrapper.style.marginBottom =
-                "5px";
+            row.className =
+                "chat-list-row";
 
 
             const button =
@@ -396,13 +356,13 @@ function renderChatList() {
 
 
             if (
-                id === currentChatId
+                chat.id ===
+                currentChatId
             ) {
 
                 button.classList.add(
                     "active"
                 );
-
             }
 
 
@@ -411,14 +371,12 @@ function renderChatList() {
                 "New Chat";
 
 
-            button.style.flex =
-                "1";
-
-
             button.onclick =
-                function() {
+                () => {
 
-                    loadChat(id);
+                    switchChat(
+                        chat.id
+                    );
 
                 };
 
@@ -428,157 +386,75 @@ function renderChatList() {
                     "button"
                 );
 
+            menu.className =
+                "chat-menu-button";
+
             menu.textContent =
                 "⋯";
-
-            menu.style.background =
-                "transparent";
-
-            menu.style.color =
-                "#aaa";
-
-            menu.style.border =
-                "none";
-
-            menu.style.cursor =
-                "pointer";
-
-            menu.style.fontSize =
-                "20px";
 
             menu.title =
                 "Chat options";
 
 
             menu.onclick =
-                function(event) {
+                event => {
 
                     event.stopPropagation();
 
-                    showChatMenu(id);
+                    showChatMenu(
+                        chat.id
+                    );
 
                 };
 
 
-            wrapper.appendChild(
+            row.appendChild(
                 button
             );
 
-            wrapper.appendChild(
+            row.appendChild(
                 menu
             );
 
             list.appendChild(
-                wrapper
+                row
             );
-
         }
     );
-
 }
 
 
 // ============================================================
-// CHAT MENU
+// RENDER CURRENT CHAT
 // ============================================================
 
-function showChatMenu(id) {
-
-    if (!chats[id]) {
-
-        return;
-
-    }
-
-    const action =
-        prompt(
-            "Type:\nrename - Rename chat\ndelete - Delete chat",
-            ""
-        );
-
-    if (!action) {
-
-        return;
-
-    }
-
-    const command =
-        action
-            .trim()
-            .toLowerCase();
-
-
-    if (
-        command ===
-        "delete"
-    ) {
-
-        deleteChat(id);
-
-    } else if (
-        command ===
-        "rename"
-    ) {
-
-        renameChat(id);
-
-    }
-
-}
-
-
-// ============================================================
-// LOAD CHAT
-// ============================================================
-
-function loadChat(id) {
-
-    if (!chats[id]) {
-
-        console.error(
-            "Chat does not exist:",
-            id
-        );
-
-        return;
-
-    }
-
-    currentChatId =
-        id;
-
-    saveCurrentChatId();
-
-    renderChatList();
-
+function renderCurrentChat() {
 
     const container =
         document.getElementById(
             "messages"
         );
 
-
-    // IMPORTANT:
-    // Prevent the null.innerHTML error
-    // you were getting.
-
     if (!container) {
 
         console.error(
-            "CSLLM Error: #messages was not found in index.html."
+            "CSLLM ERROR: #messages does not exist."
         );
 
         return;
-
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     const chat =
-        chats[id];
+        getCurrentChat();
+
+
+    if (!chat) {
+        return;
+    }
 
 
     if (
@@ -586,19 +462,19 @@ function loadChat(id) {
         chat.messages.length === 0
     ) {
 
-        showWelcomeScreen();
+        showWelcome();
 
         return;
-
     }
 
 
     chat.messages.forEach(
-        function(message) {
+        message => {
 
             addMessageToScreen(
                 message.role,
-                message.content
+                message.content,
+                false
             );
 
         }
@@ -606,15 +482,14 @@ function loadChat(id) {
 
 
     scrollToBottom();
-
 }
 
 
 // ============================================================
-// WELCOME SCREEN
+// WELCOME
 // ============================================================
 
-function showWelcomeScreen() {
+function showWelcome() {
 
     const container =
         document.getElementById(
@@ -622,9 +497,7 @@ function showWelcomeScreen() {
         );
 
     if (!container) {
-
         return;
-
     }
 
 
@@ -637,28 +510,46 @@ function showWelcomeScreen() {
         "empty-chat";
 
 
-    welcome.innerHTML = `
-        <div>
-            <h1>CSLLM</h1>
-            <p>How can I help you today?</p>
-        </div>
-    `;
+    const title =
+        document.createElement(
+            "h1"
+        );
 
+    title.textContent =
+        "CSLLM";
+
+
+    const subtitle =
+        document.createElement(
+            "p"
+        );
+
+    subtitle.textContent =
+        "How can I help you today?";
+
+
+    welcome.appendChild(
+        title
+    );
+
+    welcome.appendChild(
+        subtitle
+    );
 
     container.appendChild(
         welcome
     );
-
 }
 
 
 // ============================================================
-// ADD MESSAGE TO SCREEN
+// DISPLAY MESSAGE
 // ============================================================
 
 function addMessageToScreen(
     role,
-    content
+    content,
+    scroll = true
 ) {
 
     const container =
@@ -666,15 +557,8 @@ function addMessageToScreen(
             "messages"
         );
 
-
     if (!container) {
-
-        console.error(
-            "CSLLM Error: #messages was not found."
-        );
-
         return;
-
     }
 
 
@@ -684,19 +568,10 @@ function addMessageToScreen(
         );
 
 
-    if (
+    message.className =
         role === "user"
-    ) {
-
-        message.className =
-            "message user-message";
-
-    } else {
-
-        message.className =
-            "message ai-message";
-
-    }
+            ? "message user-message"
+            : "message ai-message";
 
 
     const messageContent =
@@ -709,14 +584,10 @@ function addMessageToScreen(
         "message-content";
 
 
-    // Use textContent rather than
-    // innerHTML for AI/user text.
-    //
-    // This prevents arbitrary HTML
-    // from being injected into the page.
-
-    messageContent.textContent =
-        content;
+    messageContent.innerHTML =
+        formatMessage(
+            String(content || "")
+        );
 
 
     message.appendChild(
@@ -729,13 +600,68 @@ function addMessageToScreen(
     );
 
 
-    scrollToBottom();
-
+    if (scroll) {
+        scrollToBottom();
+    }
 }
 
 
 // ============================================================
-// SCROLL TO BOTTOM
+// BASIC MARKDOWN FORMAT
+// ============================================================
+
+function formatMessage(text) {
+
+    let result =
+        text
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            );
+
+
+    result =
+        result.replace(
+            /```([\s\S]*?)```/g,
+            "<pre><code>$1</code></pre>"
+        );
+
+
+    result =
+        result.replace(
+            /\*\*(.*?)\*\*/g,
+            "<strong>$1</strong>"
+        );
+
+
+    result =
+        result.replace(
+            /\*(.*?)\*/g,
+            "<em>$1</em>"
+        );
+
+
+    result =
+        result.replace(
+            /\n/g,
+            "<br>"
+        );
+
+
+    return result;
+}
+
+
+// ============================================================
+// SCROLL
 // ============================================================
 
 function scrollToBottom() {
@@ -745,22 +671,51 @@ function scrollToBottom() {
             "messages"
         );
 
-
     if (!container) {
-
         return;
-
     }
-
 
     container.scrollTop =
         container.scrollHeight;
-
 }
 
 
 // ============================================================
-// ADD MESSAGE TO CURRENT CHAT
+// CREATE CHAT TITLE
+// ============================================================
+
+function createChatTitle(text) {
+
+    let title =
+        text
+            .replace(
+                /\s+/g,
+                " "
+            )
+            .trim();
+
+
+    if (
+        title.length > 35
+    ) {
+
+        title =
+            title.substring(
+                0,
+                35
+            ) + "...";
+    }
+
+
+    return (
+        title ||
+        "New Chat"
+    );
+}
+
+
+// ============================================================
+// ADD MESSAGE TO CHAT
 // ============================================================
 
 function addMessageToChat(
@@ -771,15 +726,8 @@ function addMessageToChat(
     const chat =
         getCurrentChat();
 
-
     if (!chat) {
-
-        console.error(
-            "No current chat."
-        );
-
         return;
-
     }
 
 
@@ -801,9 +749,6 @@ function addMessageToChat(
         Date.now();
 
 
-    // Automatically name the chat
-    // after the first user message.
-
     if (
         role === "user" &&
         chat.title ===
@@ -814,194 +759,28 @@ function addMessageToChat(
             createChatTitle(
                 content
             );
-
     }
 
 
     saveChats();
 
     renderChatList();
-
 }
 
 
 // ============================================================
-// CREATE CHAT TITLE
+// LOADING INDICATOR
 // ============================================================
 
-function createChatTitle(
-    text
-) {
-
-    let title =
-        text
-            .replace(
-                /\s+/g,
-                " "
-            )
-            .trim();
-
-
-    if (
-        title.length >
-        35
-    ) {
-
-        title =
-            title.substring(
-                0,
-                35
-            ) + "...";
-
-    }
-
-
-    return (
-        title ||
-        "New Chat"
-    );
-
-}
-
-
-// ============================================================
-// CREATE NEW CHAT IF NEEDED
-// ============================================================
-
-function ensureCurrentChat() {
-
-    if (
-        !currentChatId ||
-        !chats[currentChatId]
-    ) {
-
-        createNewChat();
-
-    }
-
-}
-
-
-// ============================================================
-// GET MESSAGE INPUT
-// ============================================================
-
-function getInput() {
-
-    return document.getElementById(
-        "message-input"
-    );
-
-}
-
-
-// ============================================================
-// SET INPUT
-// ============================================================
-
-function setInput(value) {
-
-    const input =
-        getInput();
-
-    if (!input) {
-
-        return;
-
-    }
-
-    input.value =
-        value;
-
-    input.focus();
-
-    resizeInput();
-
-}
-
-
-// ============================================================
-// RESIZE TEXTAREA
-// ============================================================
-
-function resizeInput() {
-
-    const input =
-        getInput();
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    input.style.height =
-        "auto";
-
-
-    input.style.height =
-        Math.min(
-            input.scrollHeight,
-            180
-        ) + "px";
-
-}
-
-
-// ============================================================
-// SET BUTTON STATE
-// ============================================================
-
-function setSendingState(
-    sending
-) {
-
-    isSending =
-        sending;
-
-
-    const button =
-        document.getElementById(
-            "send-button"
-        );
-
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.disabled =
-        sending;
-
-
-    button.textContent =
-        sending
-            ? "..."
-            : "Send";
-
-}
-
-
-// ============================================================
-// SHOW LOADING MESSAGE
-// ============================================================
-
-function showLoadingMessage() {
+function showLoading() {
 
     const container =
         document.getElementById(
             "messages"
         );
 
-
     if (!container) {
-
         return null;
-
     }
 
 
@@ -1009,7 +788,6 @@ function showLoadingMessage() {
         document.createElement(
             "div"
         );
-
 
     message.className =
         "message ai-message";
@@ -1020,10 +798,8 @@ function showLoadingMessage() {
             "div"
         );
 
-
     content.className =
         "message-content";
-
 
     content.textContent =
         "Thinking...";
@@ -1032,7 +808,6 @@ function showLoadingMessage() {
     message.appendChild(
         content
     );
-
 
     container.appendChild(
         message
@@ -1043,29 +818,19 @@ function showLoadingMessage() {
 
 
     return message;
-
 }
 
 
-// ============================================================
-// REMOVE LOADING MESSAGE
-// ============================================================
-
-function removeLoadingMessage(
-    element
-) {
+function removeLoading(element) {
 
     if (
         element &&
         element.parentNode
     ) {
 
-        element.parentNode.removeChild(
-            element
-        );
+        element.remove();
 
     }
-
 }
 
 
@@ -1074,73 +839,74 @@ function removeLoadingMessage(
 // ============================================================
 
 async function sendMessage(
-    text = null
+    suppliedText = null
 ) {
 
     if (isSending) {
-
         return;
-
     }
-
-
-    ensureCurrentChat();
 
 
     const input =
-        getInput();
+        document.getElementById(
+            "message-input"
+        );
 
 
-    let messageText;
+    let text;
 
 
     if (
-        text !== null
+        suppliedText !== null
     ) {
 
-        messageText =
-            text;
+        text =
+            suppliedText.trim();
+
+    } else if (input) {
+
+        text =
+            input.value.trim();
 
     } else {
 
-        if (!input) {
-
-            console.error(
-                "CSLLM Error: #message-input not found."
-            );
-
-            return;
-
-        }
-
-        messageText =
-            input.value;
-
-    }
-
-
-    messageText =
-        messageText.trim();
-
-
-    if (!messageText) {
+        console.error(
+            "#message-input was not found."
+        );
 
         return;
-
     }
 
 
-    // Add user message.
+    if (!text) {
+        return;
+    }
+
+
+    let chat =
+        getCurrentChat();
+
+
+    if (!chat) {
+
+        newChat();
+
+        chat =
+            getCurrentChat();
+    }
+
+
+    // Add user message
 
     addMessageToChat(
         "user",
-        messageText
+        text
     );
 
 
     addMessageToScreen(
         "user",
-        messageText
+        text
     );
 
 
@@ -1149,30 +915,46 @@ async function sendMessage(
         input.value =
             "";
 
-        resizeInput();
-
+        input.style.height =
+            "auto";
     }
 
 
     const loading =
-        showLoadingMessage();
+        showLoading();
 
 
-    setSendingState(
+    isSending =
+        true;
+
+
+    setSendButton(
         true
     );
 
 
     try {
 
-        const chat =
-            getCurrentChat();
+        // Send the entire conversation.
+        // This gives the AI memory inside
+        // the current chat.
+
+        const messages =
+            chat.messages.map(
+                message => ({
+                    role:
+                        message.role,
+                    content:
+                        message.content
+                })
+            );
 
 
-        // Send the entire conversation
-        // to the backend so the AI can
-        // remember previous messages
-        // within this chat.
+        console.log(
+            "Sending request to:",
+            API_URL
+        );
+
 
         const response =
             await fetch(
@@ -1183,18 +965,14 @@ async function sendMessage(
                         "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json"
-
                     },
 
                     body:
                         JSON.stringify({
-
                             messages:
-                                chat.messages
-
+                                messages
                         })
 
                 }
@@ -1207,7 +985,7 @@ async function sendMessage(
         );
 
 
-        const rawText =
+        const raw =
             await response.text();
 
 
@@ -1218,90 +996,68 @@ async function sendMessage(
 
             data =
                 JSON.parse(
-                    rawText
+                    raw
                 );
 
         } catch {
 
             data = {
-
                 error:
-                    rawText
-
+                    raw
             };
-
         }
 
 
-        if (
-            !response.ok
-        ) {
+        if (!response.ok) {
 
             console.error(
                 "Backend error:",
                 response.status,
-                rawText
-            );
-
-
-            let errorMessage =
-                "The AI service returned an error.";
-
-
-            if (
-                data &&
-                data.error
-            ) {
-
-                errorMessage =
-                    data.error;
-
-            }
-
-
-            throw new Error(
-                `Server returned ${response.status}: ${errorMessage}`
-            );
-
-        }
-
-
-        // Try several common response formats.
-
-        const aiText =
-            extractAIResponse(
                 data
             );
 
 
-        if (!aiText) {
+            throw new Error(
+                data.error ||
+                `Server returned ${response.status}`
+            );
+        }
+
+
+        const reply =
+            extractReply(
+                data
+            );
+
+
+        if (!reply) {
 
             console.error(
                 "Unexpected backend response:",
                 data
             );
 
-            throw new Error(
-                "The AI returned an empty response."
-            );
 
+            throw new Error(
+                "The backend returned no AI response."
+            );
         }
 
 
-        removeLoadingMessage(
+        removeLoading(
             loading
         );
 
 
         addMessageToChat(
             "assistant",
-            aiText
+            reply
         );
 
 
         addMessageToScreen(
             "assistant",
-            aiText
+            reply
         );
 
 
@@ -1313,36 +1069,30 @@ async function sendMessage(
         );
 
 
-        removeLoadingMessage(
+        removeLoading(
             loading
         );
-
-
-        const errorText =
-            error.message ||
-            "Something went wrong.";
 
 
         addMessageToScreen(
             "assistant",
             "Sorry, I couldn't connect to the AI.\n\n" +
-            errorText
+            error.message
         );
 
     } finally {
 
-        setSendingState(
+        isSending =
+            false;
+
+        setSendButton(
             false
         );
 
         if (input) {
-
             input.focus();
-
         }
-
     }
-
 }
 
 
@@ -1350,20 +1100,12 @@ async function sendMessage(
 // EXTRACT AI RESPONSE
 // ============================================================
 
-function extractAIResponse(
-    data
-) {
+function extractReply(data) {
 
     if (!data) {
-
         return null;
-
     }
 
-
-    // Common format:
-    //
-    // { reply: "Hello!" }
 
     if (
         typeof data.reply ===
@@ -1371,13 +1113,8 @@ function extractAIResponse(
     ) {
 
         return data.reply;
-
     }
 
-
-    // Another common format:
-    //
-    // { response: "Hello!" }
 
     if (
         typeof data.response ===
@@ -1385,13 +1122,17 @@ function extractAIResponse(
     ) {
 
         return data.response;
-
     }
 
 
-    // Another format:
-    //
-    // { message: "Hello!" }
+    if (
+        typeof data.content ===
+        "string"
+    ) {
+
+        return data.content;
+    }
+
 
     if (
         typeof data.message ===
@@ -1399,50 +1140,128 @@ function extractAIResponse(
     ) {
 
         return data.message;
-
     }
 
 
-    // OpenAI-style response:
-    //
-    // choices[0].message.content
-
     if (
-        data.choices &&
-        data.choices.length > 0 &&
-        data.choices[0].message &&
-        typeof
-            data.choices[0].message.content ===
+        data.message &&
+        typeof data.message.content ===
             "string"
     ) {
 
-        return data
-            .choices[0]
-            .message
-            .content;
-
+        return data.message.content;
     }
 
 
-    // OpenAI-style text response.
-
     if (
         data.choices &&
-        data.choices.length > 0 &&
-        typeof
-            data.choices[0].text ===
-            "string"
+        data.choices[0]
     ) {
 
-        return data
-            .choices[0]
-            .text;
+        const choice =
+            data.choices[0];
 
+
+        if (
+            choice.message &&
+            typeof choice.message.content ===
+                "string"
+        ) {
+
+            return choice.message.content;
+        }
+
+
+        if (
+            typeof choice.text ===
+                "string"
+        ) {
+
+            return choice.text;
+        }
     }
 
 
     return null;
+}
 
+
+// ============================================================
+// SEND BUTTON
+// ============================================================
+
+function setSendButton(
+    loading
+) {
+
+    const button =
+        document.getElementById(
+            "send-button"
+        );
+
+    if (!button) {
+        return;
+    }
+
+
+    button.disabled =
+        loading;
+
+
+    if (loading) {
+
+        button.dataset.oldText =
+            button.textContent;
+
+        button.textContent =
+            "Thinking...";
+
+    } else {
+
+        button.textContent =
+            button.dataset.oldText ||
+            "Send";
+    }
+}
+
+
+// ============================================================
+// HANDLE SEND
+// ============================================================
+
+async function handleSend() {
+
+    const input =
+        document.getElementById(
+            "message-input"
+        );
+
+    if (!input) {
+        return;
+    }
+
+
+    await sendMessage(
+        input.value
+    );
+}
+
+
+// ============================================================
+// ENTER KEY
+// ============================================================
+
+function handleKey(event) {
+
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey
+    ) {
+
+        event.preventDefault();
+
+        handleSend();
+    }
 }
 
 
@@ -1450,85 +1269,55 @@ function extractAIResponse(
 // SUGGESTION BUTTONS
 // ============================================================
 
-function suggest(
-    text
-) {
-
-    setInput(
-        text
-    );
+function suggest(text) {
 
     sendMessage(
         text
     );
-
 }
 
 
 // ============================================================
-// KEYBOARD HANDLING
-// ============================================================
-
-function handleKey(
-    event
-) {
-
-    if (
-        event.key ===
-        "Enter" &&
-        !event.shiftKey
-    ) {
-
-        event.preventDefault();
-
-        sendMessage();
-
-    }
-
-}
-
-
-// ============================================================
-// CLEAR ALL CHATS
+// CLEAR ALL
 // ============================================================
 
 function clearAllChats() {
 
-    const confirmed =
-        confirm(
-            "Delete ALL chats? This cannot be undone."
-        );
-
-
-    if (!confirmed) {
-
+    if (
+        !confirm(
+            "Delete all chats?"
+        )
+    ) {
         return;
-
     }
 
 
-    chats = {};
+    chats = [];
+
+
+    const chat =
+        createChat();
+
+
+    chats.push(
+        chat
+    );
+
 
     currentChatId =
-        null;
+        chat.id;
 
 
-    localStorage.removeItem(
-        STORAGE_KEY
-    );
+    saveChats();
 
-    localStorage.removeItem(
-        CURRENT_CHAT_KEY
-    );
+    renderChatList();
 
-
-    createNewChat();
-
+    renderCurrentChat();
 }
 
 
 // ============================================================
-// EXPORT CURRENT CHAT
+// EXPORT CHAT
 // ============================================================
 
 function exportCurrentChat() {
@@ -1536,38 +1325,35 @@ function exportCurrentChat() {
     const chat =
         getCurrentChat();
 
-
     if (!chat) {
-
         return;
-
     }
 
 
-    let text =
+    let output =
         `CSLLM - ${chat.title}\n\n`;
 
 
     chat.messages.forEach(
-        function(message) {
+        message => {
 
-            const name =
-                message.role ===
-                "user"
-                    ? "You"
-                    : "CSLLM";
+            output +=
+                `${
+                    message.role === "user"
+                        ? "You"
+                        : "CSLLM"
+                }:\n`;
 
-
-            text +=
-                `${name}:\n${message.content}\n\n`;
-
+            output +=
+                message.content +
+                "\n\n";
         }
     );
 
 
     const blob =
         new Blob(
-            [text],
+            [output],
             {
                 type:
                     "text/plain"
@@ -1600,80 +1386,6 @@ function exportCurrentChat() {
     URL.revokeObjectURL(
         url
     );
-
-}
-
-
-// ============================================================
-// AUTO RESIZE INPUT
-// ============================================================
-
-function setupInput() {
-
-    const input =
-        getInput();
-
-
-    if (!input) {
-
-        console.warn(
-            "CSLLM: #message-input was not found."
-        );
-
-        return;
-
-    }
-
-
-    input.addEventListener(
-        "input",
-        resizeInput
-    );
-
-
-    input.addEventListener(
-        "keydown",
-        handleKey
-    );
-
-
-    resizeInput();
-
-}
-
-
-// ============================================================
-// SEND BUTTON
-// ============================================================
-
-function setupSendButton() {
-
-    const button =
-        document.getElementById(
-            "send-button"
-        );
-
-
-    if (!button) {
-
-        console.warn(
-            "CSLLM: #send-button was not found."
-        );
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        function() {
-
-            sendMessage();
-
-        }
-    );
-
 }
 
 
@@ -1691,89 +1403,110 @@ function initialize() {
     loadChats();
 
 
-    const savedChat =
-        getSavedChatId();
+    const saved =
+        localStorage.getItem(
+            CURRENT_CHAT_KEY
+        );
 
-
-    // If the previously selected chat
-    // still exists, reopen it.
 
     if (
-        savedChat &&
-        chats[savedChat]
+        saved &&
+        chats.some(
+            chat => chat.id === saved
+        )
     ) {
 
         currentChatId =
-            savedChat;
+            saved;
 
-    }
-
-
-    // Otherwise choose the newest chat.
-
-    if (
-        !currentChatId
+    } else if (
+        chats.length > 0
     ) {
 
-        const ids =
-            Object.keys(chats);
+        chats.sort(
+            (a, b) =>
+                b.updatedAt -
+                a.updatedAt
+        );
 
-
-        if (
-            ids.length > 0
-        ) {
-
-            ids.sort(
-                (a, b) =>
-                    chats[b].updatedAt -
-                    chats[a].updatedAt
-            );
-
-
-            currentChatId =
-                ids[0];
-
-        }
-
-    }
-
-
-    // If there are no chats,
-    // create one.
-
-    if (
-        !currentChatId
-    ) {
-
-        createNewChat();
+        currentChatId =
+            chats[0].id;
 
     } else {
 
-        saveCurrentChatId();
+        const chat =
+            createChat();
 
-        renderChatList();
-
-        loadChat(
-            currentChatId
+        chats.push(
+            chat
         );
 
+        currentChatId =
+            chat.id;
     }
 
 
-    setupInput();
+    saveChats();
 
-    setupSendButton();
+    renderChatList();
+
+    renderCurrentChat();
+
+
+    const input =
+        document.getElementById(
+            "message-input"
+        );
+
+
+    if (input) {
+
+        input.addEventListener(
+            "keydown",
+            handleKey
+        );
+
+
+        input.addEventListener(
+            "input",
+            () => {
+
+                input.style.height =
+                    "auto";
+
+                input.style.height =
+                    Math.min(
+                        input.scrollHeight,
+                        180
+                    ) + "px";
+            }
+        );
+    }
+
+
+    const button =
+        document.getElementById(
+            "send-button"
+        );
+
+
+    if (button) {
+
+        button.addEventListener(
+            "click",
+            handleSend
+        );
+    }
 
 
     console.log(
         "CSLLM ready."
     );
-
 }
 
 
 // ============================================================
-// START APP
+// START
 // ============================================================
 
 if (
@@ -1789,871 +1522,5 @@ if (
 } else {
 
     initialize();
-
 }
-```
-
-
-const API_URL = "https://csllm.vercel.app/api/chat";
-
-
-// ============================================
-// CHAT STORAGE
-// ============================================
-
-let chats = JSON.parse(
-    localStorage.getItem("csllm_chats") || "[]"
-);
-
-let currentChatId =
-    localStorage.getItem("csllm_current_chat");
-
-
-// ============================================
-// CREATE FIRST CHAT IF NEEDED
-// ============================================
-
-if (!Array.isArray(chats) || chats.length === 0) {
-
-    chats = [
-        createChat()
-    ];
-
-}
-
-
-// ============================================
-// MAKE SURE CURRENT CHAT EXISTS
-// ============================================
-
-if (
-    !currentChatId ||
-    !chats.some(chat => chat.id === currentChatId)
-) {
-
-    currentChatId = chats[0].id;
-
-}
-
-
-saveChats();
-
-
-// ============================================
-// CREATE CHAT
-// ============================================
-
-function createChat(title = "New Chat") {
-
-    return {
-
-        id:
-            "chat-" +
-            Date.now() +
-            "-" +
-            Math.random()
-                .toString(36)
-                .substring(2, 9),
-
-        title: title,
-
-        messages: []
-
-    };
-
-}
-
-
-// ============================================
-// GET CURRENT CHAT
-// ============================================
-
-function getCurrentChat() {
-
-    return chats.find(
-        chat => chat.id === currentChatId
-    );
-
-}
-
-
-// ============================================
-// SAVE CHATS
-// ============================================
-
-function saveChats() {
-
-    localStorage.setItem(
-        "csllm_chats",
-        JSON.stringify(chats)
-    );
-
-    localStorage.setItem(
-        "csllm_current_chat",
-        currentChatId
-    );
-
-}
-
-
-// ============================================
-// NEW CHAT
-// ============================================
-
-function newChat() {
-
-    const chat =
-        createChat();
-
-    chats.unshift(chat);
-
-    currentChatId =
-        chat.id;
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-
-}
-
-
-// ============================================
-// SWITCH CHAT
-// ============================================
-
-function switchChat(chatId) {
-
-    const chat =
-        chats.find(
-            chat => chat.id === chatId
-        );
-
-    if (!chat) return;
-
-    currentChatId =
-        chatId;
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-
-}
-
-
-// ============================================
-// DELETE CHAT
-// ============================================
-
-function deleteChat(chatId) {
-
-    chats =
-        chats.filter(
-            chat => chat.id !== chatId
-        );
-
-
-    if (chats.length === 0) {
-
-        const chat =
-            createChat();
-
-        chats.push(chat);
-
-    }
-
-
-    if (
-        !chats.some(
-            chat => chat.id === currentChatId
-        )
-    ) {
-
-        currentChatId =
-            chats[0].id;
-
-    }
-
-
-    saveChats();
-
-    renderChatList();
-
-    renderCurrentChat();
-
-}
-
-
-// ============================================
-// RENAME CHAT
-// ============================================
-
-function renameChat(chatId, title) {
-
-    const chat =
-        chats.find(
-            chat => chat.id === chatId
-        );
-
-    if (!chat) return;
-
-    chat.title =
-        title.trim() ||
-        "New Chat";
-
-    saveChats();
-
-    renderChatList();
-
-}
-
-
-// ============================================
-// SEND MESSAGE TO AI
-// ============================================
-
-async function sendMessage(message) {
-
-    const chat =
-        getCurrentChat();
-
-    if (!chat) {
-        throw new Error(
-            "No active chat."
-        );
-    }
-
-
-    message =
-        message.trim();
-
-
-    if (!message) {
-        return;
-    }
-
-
-    // ========================================
-    // ADD USER MESSAGE
-    // ========================================
-
-    chat.messages.push({
-
-        role: "user",
-
-        content: message
-
-    });
-
-
-    saveChats();
-
-    renderCurrentChat();
-
-
-    // ========================================
-    // CREATE HISTORY
-    // ========================================
-
-    // We DON'T send the newest message twice.
-    // The newest message is already inside
-    // chat.messages, so the backend receives
-    // the complete conversation here.
-
-    const history =
-        chat.messages.map(
-            msg => ({
-
-                role:
-                    msg.role,
-
-                content:
-                    msg.content
-
-            })
-        );
-
-
-    // ========================================
-    // SHOW LOADING
-    // ========================================
-
-    setLoading(true);
-
-
-    try {
-
-        console.log(
-            "Sending conversation:",
-            history
-        );
-
-
-        // ========================================
-        // CALL VERCEL BACKEND
-        // ========================================
-
-        const response =
-            await fetch(
-                API_URL,
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            // Newest user message
-                            message:
-                                message,
-
-                            // Complete conversation
-                            history:
-                                history.slice(0, -1)
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "Backend status:",
-            response.status
-        );
-
-
-        // ========================================
-        // ERROR
-        // ========================================
-
-        if (!response.ok) {
-
-            console.error(
-                "Backend error:",
-                data
-            );
-
-            throw new Error(
-                data.error ||
-                `Server returned ${response.status}`
-            );
-
-        }
-
-
-        // ========================================
-        // GET AI RESPONSE
-        // ========================================
-
-        const reply =
-            data.reply;
-
-
-        if (
-            !reply ||
-            typeof reply !== "string"
-        ) {
-
-            throw new Error(
-                "The AI returned an empty response."
-            );
-
-        }
-
-
-        // ========================================
-        // SAVE AI RESPONSE
-        // ========================================
-
-        chat.messages.push({
-
-            role:
-                "assistant",
-
-            content:
-                reply
-
-        });
-
-
-        // ========================================
-        // AUTOMATIC CHAT TITLE
-        // ========================================
-
-        if (
-            chat.title === "New Chat"
-        ) {
-
-            chat.title =
-                message.length > 30
-                    ? message.substring(0, 30) + "..."
-                    : message;
-
-        }
-
-
-        saveChats();
-
-        renderChatList();
-
-        renderCurrentChat();
-
-
-        return reply;
-
-
-    } catch (error) {
-
-        console.error(
-            "AI connection error:",
-            error
-        );
-
-
-        // ========================================
-        // REMOVE USER MESSAGE IF AI FAILED
-        // ========================================
-
-        if (
-            chat.messages.length > 0 &&
-            chat.messages[
-                chat.messages.length - 1
-            ].role === "user"
-        ) {
-
-            chat.messages.pop();
-
-            saveChats();
-
-            renderCurrentChat();
-
-        }
-
-
-        throw error;
-
-
-    } finally {
-
-        setLoading(false);
-
-    }
-
-}
-
-
-// ============================================
-// RENDER CHAT LIST
-// ============================================
-
-function renderChatList() {
-
-    const container =
-        document.getElementById(
-            "chat-list"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    chats.forEach(chat => {
-
-        const button =
-            document.createElement(
-                "button"
-            );
-
-
-        button.className =
-            "chat-list-item";
-
-
-        if (
-            chat.id === currentChatId
-        ) {
-
-            button.classList.add(
-                "active"
-            );
-
-        }
-
-
-        button.textContent =
-            chat.title;
-
-
-        button.onclick =
-            () => {
-
-                switchChat(
-                    chat.id
-                );
-
-            };
-
-
-        container.appendChild(
-            button
-        );
-
-    });
-
-}
-
-
-// ============================================
-// RENDER CURRENT CHAT
-// ============================================
-
-function renderCurrentChat() {
-
-    const chat =
-        getCurrentChat();
-
-
-    if (!chat) {
-        return;
-    }
-
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    chat.messages.forEach(
-        message => {
-
-            addMessageToScreen(
-                message.role,
-                message.content
-            );
-
-        }
-    );
-
-
-    // Scroll to bottom
-
-    container.scrollTop =
-        container.scrollHeight;
-
-}
-
-
-// ============================================
-// DISPLAY MESSAGE
-// ============================================
-
-function addMessageToScreen(
-    role,
-    content
-) {
-
-    const container =
-        document.getElementById(
-            "messages"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-
-    message.className =
-        role === "user"
-            ? "message user-message"
-            : "message ai-message";
-
-
-    const text =
-        document.createElement(
-            "div"
-        );
-
-
-    text.className =
-        "message-content";
-
-
-    // Basic Markdown-like formatting
-
-    text.innerHTML =
-        formatMessage(
-            content
-        );
-
-
-    message.appendChild(
-        text
-    );
-
-
-    container.appendChild(
-        message
-    );
-
-}
-
-
-// ============================================
-// BASIC MESSAGE FORMATTER
-// ============================================
-
-function formatMessage(text) {
-
-    if (!text) {
-        return "";
-    }
-
-
-    // Escape HTML first
-
-    let result =
-        text
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            );
-
-
-    // Code blocks
-
-    result =
-        result.replace(
-            /```([\s\S]*?)```/g,
-            "<pre><code>$1</code></pre>"
-        );
-
-
-    // Bold
-
-    result =
-        result.replace(
-            /\*\*(.*?)\*\*/g,
-            "<strong>$1</strong>"
-        );
-
-
-    // Italic
-
-    result =
-        result.replace(
-            /\*(.*?)\*/g,
-            "<em>$1</em>"
-        );
-
-
-    // Line breaks
-
-    result =
-        result.replace(
-            /\n/g,
-            "<br>"
-        );
-
-
-    return result;
-
-}
-
-
-// ============================================
-// LOADING STATE
-// ============================================
-
-function setLoading(loading) {
-
-    const button =
-        document.getElementById(
-            "send-button"
-        );
-
-
-    if (!button) {
-        return;
-    }
-
-
-    button.disabled =
-        loading;
-
-
-    if (loading) {
-
-        button.dataset.oldText =
-            button.textContent;
-
-        button.textContent =
-            "Thinking...";
-
-    } else {
-
-        button.textContent =
-            button.dataset.oldText ||
-            "Send";
-
-    }
-
-}
-
-
-// ============================================
-// HANDLE SEND BUTTON
-// ============================================
-
-async function handleSend() {
-
-    const input =
-        document.getElementById(
-            "message-input"
-        );
-
-
-    if (!input) {
-        return;
-    }
-
-
-    const message =
-        input.value.trim();
-
-
-    if (!message) {
-        return;
-    }
-
-
-    input.value = "";
-
-
-    try {
-
-        await sendMessage(
-            message
-        );
-
-    } catch (error) {
-
-        addMessageToScreen(
-            "assistant",
-            "Sorry, I couldn't connect to the AI. Please try again."
-        );
-
-    }
-
-}
-
-
-// ============================================
-// ENTER KEY
-// ============================================
-
-function handleKey(event) {
-
-    if (
-        event.key === "Enter" &&
-        !event.shiftKey
-    ) {
-
-        event.preventDefault();
-
-        handleSend();
-
-    }
-
-}
-
-
-// ============================================
-// INITIALIZE
-// ============================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        renderChatList();
-
-        renderCurrentChat();
-
-
-        const input =
-            document.getElementById(
-                "message-input"
-            );
-
-
-        if (input) {
-
-            input.addEventListener(
-                "keydown",
-                handleKey
-            );
-
-        }
-
-
-        const sendButton =
-            document.getElementById(
-                "send-button"
-            );
-
-
-        if (sendButton) {
-
-            sendButton.addEventListener(
-                "click",
-                handleSend
-            );
-
-        }
-
-    }
-);
+````
