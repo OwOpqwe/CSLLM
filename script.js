@@ -1,38 +1,63 @@
 "use strict";
 
+/*
+
+* CSLLM FRONTEND
+*
+* Your backend remains:
+* https://csllm.vercel.app/api/chat
+*
+* Do NOT put your API key in this file.
+  */
+
 const API_URL = "https://csllm.vercel.app/api/chat";
 
 let chats = [];
 let currentChatId = null;
 let isSending = false;
 
-const messagesContainer = document.getElementById("messages");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-const newChatButton = document.getElementById("newChatButton");
-const chatList = document.getElementById("chatList");
-const chatTitle = document.getElementById("chatTitle");
+let messagesContainer = null;
+let messageInput = null;
+let sendButton = null;
+let newChatButton = null;
+let chatList = null;
+let chatTitle = null;
+
+// ============================================
+// CHECK DOM ELEMENTS
+// ============================================
 
 function checkElements() {
-if (!messagesContainer) {
-console.error('Missing #messages element.');
-}
+messagesContainer = document.getElementById("messages");
+messageInput = document.getElementById("messageInput");
+sendButton = document.getElementById("sendButton");
+newChatButton = document.getElementById("newChatButton");
+chatList = document.getElementById("chatList");
+chatTitle = document.getElementById("chatTitle");
 
 ```
+if (!messagesContainer) {
+    console.error('CSLLM: Missing #messages');
+}
+
 if (!messageInput) {
-    console.error('Missing #messageInput element.');
+    console.error('CSLLM: Missing #messageInput');
 }
 
 if (!sendButton) {
-    console.error('Missing #sendButton element.');
+    console.error('CSLLM: Missing #sendButton');
 }
 
 if (!chatList) {
-    console.error('Missing #chatList element.');
+    console.warn('CSLLM: Missing #chatList');
 }
 ```
 
 }
+
+// ============================================
+// CREATE NEW CHAT
+// ============================================
 
 function createNewChat() {
 const chat = {
@@ -48,9 +73,18 @@ currentChatId = chat.id;
 saveChats();
 renderChatList();
 loadChat(chat.id);
+
+if (messageInput) {
+    messageInput.value = "";
+    messageInput.focus();
+}
 ```
 
 }
+
+// ============================================
+// DELETE CHAT
+// ============================================
 
 function deleteChat(chatId, event) {
 if (event) {
@@ -67,14 +101,18 @@ if (chats.length === 0) {
 
 if (currentChatId === chatId) {
     currentChatId = chats[0].id;
+    loadChat(currentChatId);
 }
 
 saveChats();
 renderChatList();
-loadChat(currentChatId);
 ```
 
 }
+
+// ============================================
+// SAVE CHATS
+// ============================================
 
 function saveChats() {
 try {
@@ -86,6 +124,10 @@ JSON.stringify(chats)
 console.error("Could not save chats:", error);
 }
 }
+
+// ============================================
+// LOAD SAVED CHATS
+// ============================================
 
 function loadSavedChats() {
 try {
@@ -117,11 +159,19 @@ loadChat(currentChatId);
 
 }
 
+// ============================================
+// GET CURRENT CHAT
+// ============================================
+
 function getCurrentChat() {
 return chats.find(
 chat => chat.id === currentChatId
 );
 }
+
+// ============================================
+// RENDER CHAT LIST
+// ============================================
 
 function renderChatList() {
 if (!chatList) {
@@ -133,6 +183,7 @@ chatList.innerHTML = "";
 
 chats.forEach(chat => {
     const chatItem = document.createElement("div");
+
     chatItem.className = "chat-item";
 
     if (chat.id === currentChatId) {
@@ -140,16 +191,25 @@ chats.forEach(chat => {
     }
 
     const title = document.createElement("span");
-    title.className = "chat-item-title";
-    title.textContent = chat.title || "New Chat";
 
-    const deleteButton = document.createElement("button");
+    title.className = "chat-item-title";
+
+    title.textContent =
+        chat.title || "New Chat";
+
+
+    const deleteButton =
+        document.createElement("button");
+
     deleteButton.className = "delete-chat";
+
     deleteButton.textContent = "×";
+
     deleteButton.setAttribute(
         "aria-label",
         "Delete chat"
     );
+
 
     deleteButton.addEventListener(
         "click",
@@ -158,23 +218,31 @@ chats.forEach(chat => {
         }
     );
 
+
     chatItem.appendChild(title);
     chatItem.appendChild(deleteButton);
+
 
     chatItem.addEventListener(
         "click",
         function() {
             currentChatId = chat.id;
+
             renderChatList();
             loadChat(chat.id);
         }
     );
+
 
     chatList.appendChild(chatItem);
 });
 ```
 
 }
+
+// ============================================
+// LOAD CHAT
+// ============================================
 
 function loadChat(chatId) {
 const chat = chats.find(
@@ -196,7 +264,7 @@ if (chatTitle) {
 
 if (!messagesContainer) {
     console.error(
-        "Cannot load chat because #messages does not exist."
+        "Cannot load chat: #messages does not exist."
     );
     return;
 }
@@ -204,7 +272,7 @@ if (!messagesContainer) {
 messagesContainer.innerHTML = "";
 
 if (
-    !chat.messages ||
+    !Array.isArray(chat.messages) ||
     chat.messages.length === 0
 ) {
     showWelcome();
@@ -224,20 +292,34 @@ scrollToBottom();
 
 }
 
+// ============================================
+// WELCOME SCREEN
+// ============================================
+
 function showWelcome() {
 if (!messagesContainer) {
 return;
 }
 
 ```
-const welcome = document.createElement("div");
+const welcome =
+    document.createElement("div");
+
 welcome.className = "welcome";
 
-const heading = document.createElement("h2");
-heading.textContent = "Welcome to CSLLM";
+const heading =
+    document.createElement("h2");
 
-const paragraph = document.createElement("p");
-paragraph.textContent = "How can I help you?";
+heading.textContent =
+    "Welcome to CSLLM";
+
+
+const paragraph =
+    document.createElement("p");
+
+paragraph.textContent =
+    "How can I help you?";
+
 
 welcome.appendChild(heading);
 welcome.appendChild(paragraph);
@@ -246,6 +328,10 @@ messagesContainer.appendChild(welcome);
 ```
 
 }
+
+// ============================================
+// ADD MESSAGE TO SCREEN
+// ============================================
 
 function addMessageToScreen(
 role,
@@ -260,22 +346,37 @@ return;
 }
 
 ```
-const message = document.createElement("div");
+const message =
+    document.createElement("div");
+
 message.className = "message";
 
+
 if (role === "user") {
-    message.classList.add("user-message");
+    message.classList.add(
+        "user-message"
+    );
 } else {
-    message.classList.add("assistant-message");
+    message.classList.add(
+        "assistant-message"
+    );
 }
 
-const bubble = document.createElement("div");
-bubble.className = "message-bubble";
 
-bubble.textContent = content;
+const bubble =
+    document.createElement("div");
+
+bubble.className =
+    "message-bubble";
+
+bubble.textContent =
+    content;
+
 
 message.appendChild(bubble);
+
 messagesContainer.appendChild(message);
+
 
 if (scroll) {
     scrollToBottom();
@@ -283,6 +384,10 @@ if (scroll) {
 ```
 
 }
+
+// ============================================
+// TYPING INDICATOR
+// ============================================
 
 function showTypingIndicator() {
 if (!messagesContainer) {
@@ -292,16 +397,28 @@ return;
 ```
 removeTypingIndicator();
 
-const typing = document.createElement("div");
-typing.id = "typingIndicator";
+const typing =
+    document.createElement("div");
+
+typing.id =
+    "typingIndicator";
+
 typing.className =
     "message assistant-message";
 
-const bubble = document.createElement("div");
-bubble.className = "message-bubble";
-bubble.textContent = "Thinking...";
+
+const bubble =
+    document.createElement("div");
+
+bubble.className =
+    "message-bubble";
+
+bubble.textContent =
+    "Thinking...";
+
 
 typing.appendChild(bubble);
+
 messagesContainer.appendChild(typing);
 
 scrollToBottom();
@@ -309,9 +426,15 @@ scrollToBottom();
 
 }
 
+// ============================================
+// REMOVE TYPING INDICATOR
+// ============================================
+
 function removeTypingIndicator() {
 const typing =
-document.getElementById("typingIndicator");
+document.getElementById(
+"typingIndicator"
+);
 
 ```
 if (typing) {
@@ -320,6 +443,10 @@ if (typing) {
 ```
 
 }
+
+// ============================================
+// SCROLL TO BOTTOM
+// ============================================
 
 function scrollToBottom() {
 if (!messagesContainer) {
@@ -333,6 +460,10 @@ messagesContainer.scrollTop =
 
 }
 
+// ============================================
+// UPDATE CHAT TITLE
+// ============================================
+
 function updateChatTitle(
 chat,
 firstMessage
@@ -343,7 +474,7 @@ return;
 
 ```
 if (
-    !chat.messages ||
+    !Array.isArray(chat.messages) ||
     chat.messages.length === 0
 ) {
     return;
@@ -353,7 +484,8 @@ if (
     !chat.title ||
     chat.title === "New Chat"
 ) {
-    let title = firstMessage.trim();
+    let title =
+        firstMessage.trim();
 
     if (title.length > 30) {
         title =
@@ -368,6 +500,10 @@ if (
 
 }
 
+// ============================================
+// SEND MESSAGE
+// ============================================
+
 async function sendMessage() {
 if (isSending) {
 return;
@@ -375,6 +511,9 @@ return;
 
 ```
 if (!messageInput) {
+    console.error(
+        "Message input does not exist."
+    );
     return;
 }
 
@@ -385,70 +524,111 @@ if (!text) {
     return;
 }
 
-const chat = getCurrentChat();
+let chat =
+    getCurrentChat();
+
 
 if (!chat) {
-    console.error("No current chat.");
-    return;
+    createNewChat();
+
+    chat =
+        getCurrentChat();
+
+    if (!chat) {
+        return;
+    }
 }
+
 
 isSending = true;
 
-messageInput.value = "";
-messageInput.style.height = "auto";
 
+messageInput.value = "";
+
+messageInput.style.height =
+    "auto";
+
+
+// Add user message
 chat.messages.push({
     role: "user",
     content: text
 });
 
-updateChatTitle(chat, text);
+
+updateChatTitle(
+    chat,
+    text
+);
+
 
 saveChats();
+
 renderChatList();
+
 loadChat(chat.id);
 
 showTypingIndicator();
 
+
 if (sendButton) {
     sendButton.disabled = true;
-    sendButton.textContent = "Sending...";
+    sendButton.textContent =
+        "Sending...";
 }
 
+
 try {
-    const response = await fetch(
-        API_URL,
-        {
-            method: "POST",
-
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-
-            body: JSON.stringify({
-                messages: chat.messages
-            })
-        }
+    console.log(
+        "Sending request to:",
+        API_URL
     );
+
+
+    const response =
+        await fetch(
+            API_URL,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    messages:
+                        chat.messages
+                })
+            }
+        );
+
 
     console.log(
         "Backend status:",
         response.status
     );
 
+
     const responseText =
         await response.text();
 
+
     let data;
 
+
     try {
-        data = JSON.parse(responseText);
-    } catch {
+        data =
+            JSON.parse(
+                responseText
+            );
+    } catch (parseError) {
         data = {
-            error: responseText
+            error:
+                responseText
         };
     }
+
 
     if (!response.ok) {
         console.error(
@@ -457,9 +637,19 @@ try {
             data
         );
 
-        const errorMessage =
-            data.error ||
+
+        let errorMessage =
             "The AI service returned an error.";
+
+
+        if (
+            data &&
+            data.error
+        ) {
+            errorMessage =
+                data.error;
+        }
+
 
         throw new Error(
             "Server returned " +
@@ -469,44 +659,55 @@ try {
         );
     }
 
+
+    // ====================================
+    // GET AI RESPONSE
+    // ====================================
+
     let aiMessage = "";
 
-    if (typeof data === "string") {
+
+    if (
+        typeof data === "string"
+    ) {
         aiMessage = data;
-    }
 
-    else if (data.reply) {
-        aiMessage = data.reply;
-    }
+    } else if (
+        data.reply
+    ) {
+        aiMessage =
+            data.reply;
 
-    else if (data.message) {
+    } else if (
+        data.message
+    ) {
         if (
             typeof data.message ===
             "string"
         ) {
             aiMessage =
                 data.message;
-        }
 
-        else if (
+        } else if (
             data.message.content
         ) {
             aiMessage =
                 data.message.content;
         }
-    }
 
-    else if (data.content) {
+    } else if (
+        data.content
+    ) {
         aiMessage =
             data.content;
-    }
 
-    else if (
+    } else if (
         data.choices &&
         data.choices[0]
     ) {
         const choice =
             data.choices[0];
+
 
         if (
             choice.message &&
@@ -514,17 +715,20 @@ try {
         ) {
             aiMessage =
                 choice.message.content;
-        }
 
-        else if (choice.text) {
+        } else if (
+            choice.text
+        ) {
             aiMessage =
                 choice.text;
         }
     }
 
+
     if (
         !aiMessage ||
-        typeof aiMessage !== "string"
+        typeof aiMessage !==
+        "string"
     ) {
         console.error(
             "Unknown backend response:",
@@ -536,10 +740,16 @@ try {
         );
     }
 
+
+    // ====================================
+    // SAVE AI MESSAGE
+    // ====================================
+
     chat.messages.push({
         role: "assistant",
         content: aiMessage
     });
+
 
     saveChats();
 
@@ -552,13 +762,16 @@ try {
 
     renderChatList();
 
+
 } catch (error) {
     console.error(
         "AI connection error:",
         error
     );
 
+
     removeTypingIndicator();
+
 
     addMessageToScreen(
         "assistant",
@@ -569,10 +782,14 @@ try {
 } finally {
     isSending = false;
 
+
     if (sendButton) {
         sendButton.disabled = false;
-        sendButton.textContent = "Send";
+
+        sendButton.textContent =
+            "Send";
     }
+
 
     if (messageInput) {
         messageInput.focus();
@@ -582,15 +799,27 @@ try {
 
 }
 
+// ============================================
+// ENTER KEY
+// ============================================
+
 function handleKey(event) {
 if (
 event.key === "Enter" &&
 !event.shiftKey
 ) {
 event.preventDefault();
-sendMessage();
+
+```
+    sendMessage();
 }
+```
+
 }
+
+// ============================================
+// AUTO RESIZE TEXTAREA
+// ============================================
 
 function resizeTextarea() {
 if (!messageInput) {
@@ -598,7 +827,8 @@ return;
 }
 
 ```
-messageInput.style.height = "auto";
+messageInput.style.height =
+    "auto";
 
 messageInput.style.height =
     Math.min(
@@ -609,23 +839,35 @@ messageInput.style.height =
 
 }
 
+// ============================================
+// SUGGESTION BUTTON
+// ============================================
+
 function suggest(text) {
 if (!messageInput) {
 return;
 }
 
 ```
-messageInput.value = text;
+messageInput.value =
+    text;
 
 resizeTextarea();
+
 messageInput.focus();
 ```
 
 }
 
+// ============================================
+// CLEAR ALL CHATS
+// ============================================
+
 function clearAllChats() {
 const confirmed =
-confirm("Delete all chats?");
+confirm(
+"Delete all chats?"
+);
 
 ```
 if (!confirmed) {
@@ -637,12 +879,17 @@ localStorage.removeItem(
 );
 
 chats = [];
+
 currentChatId = null;
 
 createNewChat();
 ```
 
 }
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
 
 function setupEvents() {
 if (sendButton) {
@@ -660,11 +907,13 @@ if (newChatButton) {
     );
 }
 
+
 if (messageInput) {
     messageInput.addEventListener(
         "keydown",
         handleKey
     );
+
 
     messageInput.addEventListener(
         "input",
@@ -675,10 +924,55 @@ if (messageInput) {
 
 }
 
+// ============================================
+// MAKE FUNCTIONS AVAILABLE TO HTML
+// ============================================
+
+window.sendMessage =
+sendMessage;
+
+window.handleKey =
+handleKey;
+
+window.suggest =
+suggest;
+
+window.createNewChat =
+createNewChat;
+
+window.deleteChat =
+deleteChat;
+
+window.clearAllChats =
+clearAllChats;
+
+// ============================================
+// INITIALIZE
+// ============================================
+
 function initialize() {
 checkElements();
+
+```
 setupEvents();
+
 loadSavedChats();
+```
+
 }
 
+// ============================================
+// START
+// ============================================
+
+if (
+document.readyState ===
+"loading"
+) {
+document.addEventListener(
+"DOMContentLoaded",
+initialize
+);
+} else {
 initialize();
+}
