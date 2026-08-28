@@ -494,7 +494,7 @@ MOBILE
 
 @media (max-width: 768px) {
 
-```
+
 .sidebar {
     width: 220px;
 }
@@ -520,7 +520,7 @@ MOBILE
 .chat-header {
     padding: 0 16px;
 }
-```
+
 
 }
 
@@ -530,7 +530,7 @@ SMALL MOBILE
 
 @media (max-width: 600px) {
 
-```
+
 .sidebar {
     display: none;
 }
@@ -567,7 +567,7 @@ SMALL MOBILE
 .welcome h2 {
     font-size: 24px;
 }
-```
+
 
 }
 
@@ -577,7 +577,7 @@ VERY SMALL SCREENS
 
 @media (max-width: 400px) {
 
-```
+
 .input-container {
     gap: 6px;
 }
@@ -590,6 +590,6 @@ VERY SMALL SCREENS
 .message-bubble {
     max-width: 95%;
 }
-```
+
 
 }
