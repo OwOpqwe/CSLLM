@@ -2,12 +2,12 @@
 
 /*
 
-* CSLLM FRONTEND
+* CHARLIE'S AI FRONTEND
 *
-* Your backend remains:
+* Backend:
 * https://csllm.vercel.app/api/chat
 *
-* Do NOT put your API key in this file.
+* The API key must NEVER be placed in this file.
   */
 
 const API_URL = "https://csllm.vercel.app/api/chat";
@@ -23,76 +23,106 @@ let newChatButton = null;
 let chatList = null;
 let chatTitle = null;
 
-// ============================================
-// CHECK DOM ELEMENTS
-// ============================================
+let responseType = null;
+let graphType = null;
+
+let activeCharts = [];
+
+/* ==============================
+DOM
+============================== */
 
 function checkElements() {
-messagesContainer = document.getElementById("messages");
-messageInput = document.getElementById("messageInput");
-sendButton = document.getElementById("sendButton");
-newChatButton = document.getElementById("newChatButton");
-chatList = document.getElementById("chatList");
-chatTitle = document.getElementById("chatTitle");
 
+```
+messagesContainer =
+    document.getElementById("messages");
+
+messageInput =
+    document.getElementById("messageInput");
+
+sendButton =
+    document.getElementById("sendButton");
+
+newChatButton =
+    document.getElementById("newChatButton");
+
+chatList =
+    document.getElementById("chatList");
+
+chatTitle =
+    document.getElementById("chatTitle");
+
+responseType =
+    document.getElementById("responseType");
+
+graphType =
+    document.getElementById("graphType");
 
 if (!messagesContainer) {
-    console.error('CSLLM: Missing #messages');
+    console.error("Charlie's AI: Missing #messages");
 }
 
 if (!messageInput) {
-    console.error('CSLLM: Missing #messageInput');
+    console.error("Charlie's AI: Missing #messageInput");
 }
 
 if (!sendButton) {
-    console.error('CSLLM: Missing #sendButton');
+    console.error("Charlie's AI: Missing #sendButton");
 }
 
 if (!chatList) {
-    console.warn('CSLLM: Missing #chatList');
+    console.error("Charlie's AI: Missing #chatList");
+}
+```
+
 }
 
-
-}
-
-// ============================================
-// CREATE NEW CHAT
-// ============================================
+/* ==============================
+CREATE CHAT
+============================== */
 
 function createNewChat() {
+
+```
 const chat = {
-id: Date.now().toString(),
-title: "New Chat",
-messages: []
+    id: Date.now().toString(),
+    title: "New Chat",
+    messages: []
 };
 
-
 chats.unshift(chat);
+
 currentChatId = chat.id;
 
 saveChats();
+
 renderChatList();
+
 loadChat(chat.id);
 
 if (messageInput) {
     messageInput.value = "";
     messageInput.focus();
 }
-
+```
 
 }
 
-// ============================================
-// DELETE CHAT
-// ============================================
+/* ==============================
+DELETE CHAT
+============================== */
 
 function deleteChat(chatId, event) {
+
+```
 if (event) {
-event.stopPropagation();
+    event.stopPropagation();
 }
 
-
-chats = chats.filter(chat => chat.id !== chatId);
+chats = chats.filter(
+    chat => chat.id !== chatId
+);
 
 if (chats.length === 0) {
     createNewChat();
@@ -105,41 +135,61 @@ if (currentChatId === chatId) {
 }
 
 saveChats();
-renderChatList();
 
+renderChatList();
+```
 
 }
 
-// ============================================
-// SAVE CHATS
-// ============================================
+/* ==============================
+STORAGE
+============================== */
 
 function saveChats() {
-try {
-localStorage.setItem(
-"csllm_chats",
-JSON.stringify(chats)
-);
-} catch (error) {
-console.error("Could not save chats:", error);
-}
-}
 
-// ============================================
-// LOAD SAVED CHATS
-// ============================================
+```
+try {
+
+    localStorage.setItem(
+        "charlies_ai_chats",
+        JSON.stringify(chats)
+    );
+
+} catch (error) {
+
+    console.error(
+        "Could not save chats:",
+        error
+    );
+
+}
+```
+
+}
 
 function loadSavedChats() {
-try {
-const saved = localStorage.getItem("csllm_chats");
 
+```
+try {
+
+    const saved =
+        localStorage.getItem(
+            "charlies_ai_chats"
+        );
 
     if (saved) {
         chats = JSON.parse(saved);
     }
+
 } catch (error) {
-    console.error("Could not load chats:", error);
+
+    console.error(
+        "Could not load chats:",
+        error
+    );
+
     chats = [];
+
 }
 
 if (!Array.isArray(chats)) {
@@ -154,45 +204,56 @@ if (chats.length === 0) {
 currentChatId = chats[0].id;
 
 renderChatList();
-loadChat(currentChatId);
 
+loadChat(currentChatId);
+```
 
 }
 
-// ============================================
-// GET CURRENT CHAT
-// ============================================
+/* ==============================
+CURRENT CHAT
+============================== */
 
 function getCurrentChat() {
+
+```
 return chats.find(
-chat => chat.id === currentChatId
+    chat => chat.id === currentChatId
 );
+```
+
 }
 
-// ============================================
-// RENDER CHAT LIST
-// ============================================
+/* ==============================
+CHAT LIST
+============================== */
 
 function renderChatList() {
-if (!chatList) {
-return;
-}
 
+```
+if (!chatList) {
+    return;
+}
 
 chatList.innerHTML = "";
 
 chats.forEach(chat => {
-    const chatItem = document.createElement("div");
 
-    chatItem.className = "chat-item";
+    const chatItem =
+        document.createElement("div");
+
+    chatItem.className =
+        "chat-item";
 
     if (chat.id === currentChatId) {
         chatItem.classList.add("active");
     }
 
-    const title = document.createElement("span");
+    const title =
+        document.createElement("span");
 
-    title.className = "chat-item-title";
+    title.className =
+        "chat-item-title";
 
     title.textContent =
         chat.title || "New Chat";
@@ -201,9 +262,11 @@ chats.forEach(chat => {
     const deleteButton =
         document.createElement("button");
 
-    deleteButton.className = "delete-chat";
+    deleteButton.className =
+        "delete-chat";
 
-    deleteButton.textContent = "×";
+    deleteButton.textContent =
+        "×";
 
     deleteButton.setAttribute(
         "aria-label",
@@ -213,45 +276,57 @@ chats.forEach(chat => {
 
     deleteButton.addEventListener(
         "click",
-        function(event) {
-            deleteChat(chat.id, event);
+        event => {
+            deleteChat(
+                chat.id,
+                event
+            );
         }
     );
 
 
     chatItem.appendChild(title);
-    chatItem.appendChild(deleteButton);
+
+    chatItem.appendChild(
+        deleteButton
+    );
 
 
     chatItem.addEventListener(
         "click",
-        function() {
-            currentChatId = chat.id;
+        () => {
+
+            currentChatId =
+                chat.id;
 
             renderChatList();
+
             loadChat(chat.id);
+
         }
     );
 
 
     chatList.appendChild(chatItem);
-});
 
+});
+```
 
 }
 
-// ============================================
-// LOAD CHAT
-// ============================================
+/* ==============================
+LOAD CHAT
+============================== */
 
 function loadChat(chatId) {
-const chat = chats.find(
-item => item.id === chatId
-);
 
+```
+const chat =
+    chats.find(
+        item => item.id === chatId
+    );
 
 if (!chat) {
-    console.error("Chat not found:", chatId);
     return;
 }
 
@@ -263,11 +338,18 @@ if (chatTitle) {
 }
 
 if (!messagesContainer) {
-    console.error(
-        "Cannot load chat: #messages does not exist."
-    );
     return;
 }
+
+activeCharts.forEach(
+    chart => {
+        try {
+            chart.destroy();
+        } catch {}
+    }
+);
+
+activeCharts = [];
 
 messagesContainer.innerHTML = "";
 
@@ -275,91 +357,116 @@ if (
     !Array.isArray(chat.messages) ||
     chat.messages.length === 0
 ) {
+
     showWelcome();
+
     return;
+
 }
 
-chat.messages.forEach(message => {
-    addMessageToScreen(
-        message.role,
-        message.content,
-        false
-    );
-});
+
+chat.messages.forEach(
+    message => {
+
+        if (message.role === "graph") {
+
+            addGraphToScreen(
+                message.graph,
+                false
+            );
+
+        } else {
+
+            addMessageToScreen(
+                message.role,
+                message.content,
+                false
+            );
+
+        }
+
+    }
+);
 
 scrollToBottom();
-
+```
 
 }
 
-// ============================================
-// WELCOME SCREEN
-// ============================================
+/* ==============================
+WELCOME
+============================== */
 
 function showWelcome() {
-if (!messagesContainer) {
-return;
-}
 
+```
+if (!messagesContainer) {
+    return;
+}
 
 const welcome =
     document.createElement("div");
 
-welcome.className = "welcome";
+welcome.className =
+    "welcome";
 
 const heading =
     document.createElement("h2");
 
 heading.textContent =
-    "Welcome to CSLLM";
+    "Welcome to Charlie's AI";
 
 
 const paragraph =
     document.createElement("p");
 
 paragraph.textContent =
-    "How can I help you?";
+    "Ask me anything, or ask me to create a graph.";
 
 
 welcome.appendChild(heading);
+
 welcome.appendChild(paragraph);
 
 messagesContainer.appendChild(welcome);
-
+```
 
 }
 
-// ============================================
-// ADD MESSAGE TO SCREEN
-// ============================================
+/* ==============================
+ADD MESSAGE
+============================== */
 
 function addMessageToScreen(
 role,
 content,
 scroll = true
 ) {
-if (!messagesContainer) {
-console.error(
-"Cannot display message: #messages does not exist."
-);
-return;
-}
 
+```
+if (!messagesContainer) {
+    return;
+}
 
 const message =
     document.createElement("div");
 
-message.className = "message";
+message.className =
+    "message";
 
 
 if (role === "user") {
+
     message.classList.add(
         "user-message"
     );
+
 } else {
+
     message.classList.add(
         "assistant-message"
     );
+
 }
 
 
@@ -381,20 +488,180 @@ messagesContainer.appendChild(message);
 if (scroll) {
     scrollToBottom();
 }
-
+```
 
 }
 
-// ============================================
-// TYPING INDICATOR
-// ============================================
+/* ==============================
+GRAPH
+============================== */
+
+function addGraphToScreen(
+graph,
+scroll = true
+) {
+
+```
+if (
+    !messagesContainer ||
+    !graph
+) {
+    return;
+}
+
+const wrapper =
+    document.createElement("div");
+
+wrapper.className =
+    "graph-message";
+
+
+const container =
+    document.createElement("div");
+
+container.className =
+    "graph-container";
+
+
+const canvas =
+    document.createElement("canvas");
+
+
+container.appendChild(canvas);
+
+wrapper.appendChild(container);
+
+messagesContainer.appendChild(wrapper);
+
+
+const type =
+    ["bar", "line", "pie", "scatter"]
+        .includes(graph.type)
+        ? graph.type
+        : "bar";
+
+
+const labels =
+    Array.isArray(graph.labels)
+        ? graph.labels
+        : [];
+
+
+const values =
+    Array.isArray(graph.values)
+        ? graph.values
+        : [];
+
+
+let chartData;
+
+
+if (type === "scatter") {
+
+    chartData = {
+        datasets: [
+            {
+                label:
+                    graph.label ||
+                    "Data",
+                data:
+                    values,
+                parsing: false
+            }
+        ]
+    };
+
+} else {
+
+    chartData = {
+
+        labels: labels,
+
+        datasets: [
+            {
+                label:
+                    graph.label ||
+                    "Data",
+
+                data:
+                    values,
+
+                borderWidth: 2,
+
+                tension: 0.25
+            }
+        ]
+
+    };
+
+}
+
+
+const chart =
+    new Chart(
+        canvas.getContext("2d"),
+        {
+            type: type,
+
+            data: chartData,
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    title: {
+
+                        display:
+                            Boolean(
+                                graph.title
+                            ),
+
+                        text:
+                            graph.title ||
+                            "Graph"
+
+                    },
+
+                    legend: {
+
+                        display:
+                            type !== "bar" &&
+                            type !== "line"
+
+                    }
+
+                }
+
+            }
+        }
+    );
+
+
+canvas.parentElement.style.height =
+    "420px";
+
+
+activeCharts.push(chart);
+
+
+if (scroll) {
+    scrollToBottom();
+}
+```
+
+}
+
+/* ==============================
+TYPING
+============================== */
 
 function showTypingIndicator() {
-if (!messagesContainer) {
-return;
-}
 
-
+```
 removeTypingIndicator();
 
 const typing =
@@ -422,59 +689,60 @@ typing.appendChild(bubble);
 messagesContainer.appendChild(typing);
 
 scrollToBottom();
-
+```
 
 }
 
-// ============================================
-// REMOVE TYPING INDICATOR
-// ============================================
-
 function removeTypingIndicator() {
-const typing =
-document.getElementById(
-"typingIndicator"
-);
 
+```
+const typing =
+    document.getElementById(
+        "typingIndicator"
+    );
 
 if (typing) {
     typing.remove();
 }
-
+```
 
 }
 
-// ============================================
-// SCROLL TO BOTTOM
-// ============================================
+/* ==============================
+SCROLL
+============================== */
 
 function scrollToBottom() {
-if (!messagesContainer) {
-return;
-}
 
+```
+if (!messagesContainer) {
+    return;
+}
 
 messagesContainer.scrollTop =
     messagesContainer.scrollHeight;
-
+```
 
 }
 
-// ============================================
-// UPDATE CHAT TITLE
-// ============================================
+/* ==============================
+TITLE
+============================== */
 
 function updateChatTitle(
 chat,
 firstMessage
 ) {
+
+```
 if (!chat) {
-return;
+    return;
 }
 
-
 if (
-    !Array.isArray(chat.messages) ||
+    !Array.isArray(
+        chat.messages
+    ) ||
     chat.messages.length === 0
 ) {
     return;
@@ -484,51 +752,60 @@ if (
     !chat.title ||
     chat.title === "New Chat"
 ) {
+
     let title =
         firstMessage.trim();
 
     if (title.length > 30) {
+
         title =
-            title.substring(0, 30) +
+            title.substring(
+                0,
+                30
+            ) +
             "...";
+
     }
 
     chat.title =
         title || "New Chat";
-}
-
 
 }
+```
 
-// ============================================
-// SEND MESSAGE
-// ============================================
+}
+
+/* ==============================
+SEND
+============================== */
 
 async function sendMessage() {
+
+```
 if (isSending) {
-return;
-}
-
-
-if (!messageInput) {
-    console.error(
-        "Message input does not exist."
-    );
     return;
 }
+
+if (!messageInput) {
+    return;
+}
+
 
 const text =
     messageInput.value.trim();
 
+
 if (!text) {
     return;
 }
+
 
 let chat =
     getCurrentChat();
 
 
 if (!chat) {
+
     createNewChat();
 
     chat =
@@ -537,19 +814,30 @@ if (!chat) {
     if (!chat) {
         return;
     }
+
 }
 
 
 isSending = true;
 
 
+const selectedResponseType =
+    responseType
+        ? responseType.value
+        : "normal";
+
+
+const selectedGraphType =
+    graphType
+        ? graphType.value
+        : "auto";
+
+
 messageInput.value = "";
 
-messageInput.style.height =
-    "auto";
+resizeTextarea();
 
 
-// Add user message
 chat.messages.push({
     role: "user",
     content: text
@@ -568,22 +856,22 @@ renderChatList();
 
 loadChat(chat.id);
 
+
 showTypingIndicator();
 
 
 if (sendButton) {
-    sendButton.disabled = true;
+
+    sendButton.disabled =
+        true;
+
     sendButton.textContent =
         "Sending...";
+
 }
 
 
 try {
-    console.log(
-        "Sending request to:",
-        API_URL
-    );
-
 
     const response =
         await fetch(
@@ -596,18 +884,19 @@ try {
                         "application/json"
                 },
 
-                body: JSON.stringify({
-                    messages:
-                        chat.messages
-                })
+                body:
+                    JSON.stringify({
+                        messages:
+                            chat.messages,
+
+                        responseType:
+                            selectedResponseType,
+
+                        graphType:
+                            selectedGraphType
+                    })
             }
         );
-
-
-    console.log(
-        "Backend status:",
-        response.status
-    );
 
 
     const responseText =
@@ -618,132 +907,40 @@ try {
 
 
     try {
+
         data =
             JSON.parse(
                 responseText
             );
-    } catch (parseError) {
+
+    } catch {
+
         data = {
             error:
                 responseText
         };
+
     }
 
 
     if (!response.ok) {
-        console.error(
-            "Backend error:",
-            response.status,
-            data
-        );
-
-
-        let errorMessage =
-            "The AI service returned an error.";
-
-
-        if (
-            data &&
-            data.error
-        ) {
-            errorMessage =
-                data.error;
-        }
-
 
         throw new Error(
-            "Server returned " +
-            response.status +
-            ": " +
-            errorMessage
+            data?.error ||
+            "The AI service returned an error."
         );
+
     }
 
 
-    // ====================================
-    // GET AI RESPONSE
-    // ====================================
-
-    let aiMessage = "";
+    removeTypingIndicator();
 
 
-    if (
-        typeof data === "string"
-    ) {
-        aiMessage = data;
+    const aiMessage =
+        typeof data.reply === "string"
+            ? data.reply
+            : "I received an empty response.";
 
-    } else if (
-        data.reply
-    ) {
-        aiMessage =
-            data.reply;
-
-    } else if (
-        data.message
-    ) {
-        if (
-            typeof data.message ===
-            "string"
-        ) {
-            aiMessage =
-                data.message;
-
-        } else if (
-            data.message.content
-        ) {
-            aiMessage =
-                data.message.content;
-        }
-
-    } else if (
-        data.content
-    ) {
-        aiMessage =
-            data.content;
-
-    } else if (
-        data.choices &&
-        data.choices[0]
-    ) {
-        const choice =
-            data.choices[0];
-
-
-        if (
-            choice.message &&
-            choice.message.content
-        ) {
-            aiMessage =
-                choice.message.content;
-
-        } else if (
-            choice.text
-        ) {
-            aiMessage =
-                choice.text;
-        }
-    }
-
-
-    if (
-        !aiMessage ||
-        typeof aiMessage !==
-        "string"
-    ) {
-        console.error(
-            "Unknown backend response:",
-            data
-        );
-
-        throw new Error(
-            "The backend returned an unexpected response."
-        );
-    }
-
-
-    // ====================================
-    // SAVE AI MESSAGE
-    // ====================================
 
     chat.messages.push({
         role: "assistant",
@@ -751,21 +948,39 @@ try {
     });
 
 
-    saveChats();
-
-    removeTypingIndicator();
-
     addMessageToScreen(
         "assistant",
         aiMessage
     );
 
+
+    if (
+        data.graph &&
+        typeof data.graph === "object"
+    ) {
+
+        chat.messages.push({
+            role: "graph",
+            graph: data.graph
+        });
+
+
+        addGraphToScreen(
+            data.graph
+        );
+
+    }
+
+
+    saveChats();
+
     renderChatList();
 
 
 } catch (error) {
+
     console.error(
-        "AI connection error:",
+        "Charlie's AI error:",
         error
     );
 
@@ -775,57 +990,66 @@ try {
 
     addMessageToScreen(
         "assistant",
-        "Sorry, I couldn't connect to the AI.\n\n" +
+        "Sorry, I couldn't connect to Charlie's AI.\n\n" +
         error.message
     );
 
 } finally {
+
     isSending = false;
 
 
     if (sendButton) {
-        sendButton.disabled = false;
+
+        sendButton.disabled =
+            false;
 
         sendButton.textContent =
             "Send";
+
     }
 
 
     if (messageInput) {
         messageInput.focus();
     }
-}
-
 
 }
+```
 
-// ============================================
-// ENTER KEY
-// ============================================
+}
+
+/* ==============================
+ENTER
+============================== */
 
 function handleKey(event) {
-if (
-event.key === "Enter" &&
-!event.shiftKey
-) {
-event.preventDefault();
 
+```
+if (
+    event.key === "Enter" &&
+    !event.shiftKey
+) {
+
+    event.preventDefault();
 
     sendMessage();
-}
-
 
 }
+```
 
-// ============================================
-// AUTO RESIZE TEXTAREA
-// ============================================
+}
+
+/* ==============================
+RESIZE
+============================== */
 
 function resizeTextarea() {
-if (!messageInput) {
-return;
-}
 
+```
+if (!messageInput) {
+    return;
+}
 
 messageInput.style.height =
     "auto";
@@ -834,48 +1058,29 @@ messageInput.style.height =
     Math.min(
         messageInput.scrollHeight,
         200
-    ) + "px";
-
-
-}
-
-// ============================================
-// SUGGESTION BUTTON
-// ============================================
-
-function suggest(text) {
-if (!messageInput) {
-return;
-}
-
-
-messageInput.value =
-    text;
-
-resizeTextarea();
-
-messageInput.focus();
-
+    ) +
+    "px";
+```
 
 }
 
-// ============================================
-// CLEAR ALL CHATS
-// ============================================
+/* ==============================
+CLEAR
+============================== */
 
 function clearAllChats() {
-const confirmed =
-confirm(
-"Delete all chats?"
-);
 
-
-if (!confirmed) {
+```
+if (
+    !confirm(
+        "Delete all chats?"
+    )
+) {
     return;
 }
 
 localStorage.removeItem(
-    "csllm_chats"
+    "charlies_ai_chats"
 );
 
 chats = [];
@@ -883,32 +1088,39 @@ chats = [];
 currentChatId = null;
 
 createNewChat();
-
+```
 
 }
 
-// ============================================
-// EVENT LISTENERS
-// ============================================
+/* ==============================
+EVENTS
+============================== */
 
 function setupEvents() {
+
+```
 if (sendButton) {
-sendButton.addEventListener(
-"click",
-sendMessage
-);
+
+    sendButton.addEventListener(
+        "click",
+        sendMessage
+    );
+
 }
 
 
 if (newChatButton) {
+
     newChatButton.addEventListener(
         "click",
         createNewChat
     );
+
 }
 
 
 if (messageInput) {
+
     messageInput.addEventListener(
         "keydown",
         handleKey
@@ -919,23 +1131,21 @@ if (messageInput) {
         "input",
         resizeTextarea
     );
-}
-
 
 }
+```
 
-// ============================================
-// MAKE FUNCTIONS AVAILABLE TO HTML
-// ============================================
+}
+
+/* ==============================
+GLOBALS
+============================== */
 
 window.sendMessage =
 sendMessage;
 
 window.handleKey =
 handleKey;
-
-window.suggest =
-suggest;
 
 window.createNewChat =
 createNewChat;
@@ -946,33 +1156,38 @@ deleteChat;
 window.clearAllChats =
 clearAllChats;
 
-// ============================================
-// INITIALIZE
-// ============================================
+/* ==============================
+INITIALIZE
+============================== */
 
 function initialize() {
-checkElements();
 
+```
+checkElements();
 
 setupEvents();
 
 loadSavedChats();
-
+```
 
 }
-
-// ============================================
-// START
-// ============================================
 
 if (
 document.readyState ===
 "loading"
 ) {
+
+```
 document.addEventListener(
-"DOMContentLoaded",
-initialize
+    "DOMContentLoaded",
+    initialize
 );
+```
+
 } else {
+
+```
 initialize();
+```
+
 }
