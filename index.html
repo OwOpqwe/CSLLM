@@ -9,6 +9,8 @@
 <title>Charlie's AI</title>
 
 <link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 ```
 
 </head>
@@ -18,11 +20,9 @@
 <div class="app">
 
 ```
-<!-- SIDEBAR -->
 <aside class="sidebar">
 
     <div class="sidebar-header">
-
         <h1>Charlie's AI</h1>
 
         <button
@@ -32,10 +32,8 @@
         >
             + New Chat
         </button>
-
     </div>
 
-    <!-- CHAT HISTORY -->
     <div
         id="chatList"
         class="chat-list"
@@ -44,41 +42,91 @@
 </aside>
 
 
-<!-- MAIN CHAT -->
 <main class="chat-area">
 
-    <!-- HEADER -->
     <header class="chat-header">
-
-        <h2 id="chatTitle">
-            New Chat
-        </h2>
-
+        <h2 id="chatTitle">New Chat</h2>
     </header>
 
 
-    <!-- MESSAGES -->
     <div
         id="messages"
         class="messages"
     >
-
         <div class="welcome">
 
-            <h2>
-                Welcome to Charlie's AI
-            </h2>
+            <h2>Welcome to Charlie's AI</h2>
 
             <p>
-                How can I help you?
+                Ask me anything, or ask me to create a graph.
             </p>
+
+        </div>
+    </div>
+
+
+    <div class="controls">
+
+        <div class="option-group">
+
+            <label for="responseType">
+                Response Type
+            </label>
+
+            <select id="responseType">
+
+                <option value="normal">
+                    Normal
+                </option>
+
+                <option value="explain">
+                    Explain
+                </option>
+
+                <option value="graph">
+                    Graph
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="option-group">
+
+            <label for="graphType">
+                Graph Type
+            </label>
+
+            <select id="graphType">
+
+                <option value="auto">
+                    Automatic
+                </option>
+
+                <option value="bar">
+                    Bar
+                </option>
+
+                <option value="line">
+                    Line
+                </option>
+
+                <option value="pie">
+                    Pie
+                </option>
+
+                <option value="scatter">
+                    Scatter
+                </option>
+
+            </select>
 
         </div>
 
     </div>
 
 
-    <!-- INPUT -->
     <div class="input-container">
 
         <textarea
@@ -92,7 +140,6 @@
             id="sendButton"
             class="send-button"
             type="button"
-            aria-label="Send message"
         >
             Send
         </button>
@@ -103,8 +150,6 @@
 ```
 
 </div>
-
-<!-- JAVASCRIPT -->
 
 <script src="script.js"></script>
 
